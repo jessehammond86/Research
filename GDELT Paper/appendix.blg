@@ -1,0 +1,49 @@
+This is BibTeX, Version 0.99d (TeX Live 2013)
+Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
+The top-level auxiliary file: appendix.aux
+The style file: apsr.bst
+Database file #1: paper.bib.bib
+Warning--there's a number but no volume in best13tabari
+Warning--there's a number but no volume in eck12ged
+You've used 29 entries,
+            2874 wiz_defined-function locations,
+            802 strings with 9606 characters,
+and the built_in function-call counts, 150145 in all, are:
+= -- 24857
+> -- 1764
+< -- 0
++ -- 11952
+- -- 615
+* -- 13090
+:= -- 29639
+add.period$ -- 117
+call.type$ -- 29
+change.case$ -- 377
+chr.to.int$ -- 29
+cite$ -- 31
+duplicate$ -- 423
+empty$ -- 961
+format.name$ -- 652
+if$ -- 27040
+int.to.chr$ -- 5
+int.to.str$ -- 0
+missing$ -- 23
+newline$ -- 120
+num.names$ -- 333
+pop$ -- 112
+preamble$ -- 1
+purify$ -- 435
+quote$ -- 0
+skip$ -- 395
+stack$ -- 0
+substring$ -- 35487
+swap$ -- 66
+text.length$ -- 406
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 116
+warning$ -- 2
+while$ -- 665
+width$ -- 0
+write$ -- 403
+(There were 2 warnings)
