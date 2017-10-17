@@ -18,7 +18,7 @@ json_query = {
   "paper": {
     "type": "Paper",
     "match": {
-        "NormalizedTitle": "selective laser sintering",
+        "NormalizedTitle": "laser sintering",
         },
     "select": [
         "OriginalTitle",
@@ -58,7 +58,7 @@ def bytes_to_dict(data):
 data_dict = (json.loads(bytes_to_dict(data)))
 data_json = json.dumps(data_dict)
 
-with open('/Users/jesse/Dropbox/Research/AdditiveManufacturing/data.json', 'w') as fp:
+with open('/Users/localadmin/Dropbox/Research/AdditiveManufacturing/data.json', 'w') as fp:
     json.dump(data_dict, fp)
 
 ####################################
