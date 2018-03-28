@@ -1,0 +1,2190 @@
+---
+output: 
+  bookdown::pdf_document2:
+    toc: false
+    citation_package: natbib
+    keep_tex: true
+    fig_caption: true
+    latex_engine: pdflatex
+    template: /Users/localadmin/Dropbox/SVMMarkdownTemplates/svm-latex-anon-ms.tex
+    includes: 
+      in_header: /Users/localadmin/Dropbox/SVMMarkdownTemplates/header.tex
+title: "Cheap Talk, Costly Action: Using Verbal Interaction to Predict Conflict and Cooperation"
+thanks: "Replication files are available on the author's Github account at https://github.com/jrhammond"
+author:
+- name: Jesse Hammond
+  affiliation: Naval Postgraduate School
+abstract: "Quantitative tests of constructivist theory tend to rely on structural dyadic variables such as shared political institutions, societal similarity, and joint IGO membership to explain conflict and cooperation between states. In this article, I show that we can improve these explanations by measuring time-varying levels of affinity or enmity between states more directly. To measure these underlying relationships, I analyze verbal interactions between states: threats, promises, accusations, and so on. These are low-cost, low-information events that individually say little about how states view one another. In the aggregate, however, verbal interactions serve two purposes. First, verbal interactions are imperfect but useful indicators of the underlying level of trust or affinity between states. Second, over the long term these interactions constitute identities, socializing states toward norms of cooperation or conflict with one another. I find that even after controlling for a range of variables common in the conflict literature, verbal cooperation and conflict predict material cooperation and conflict. States that engage one another positively tend to avoid militarized disputes and are more likely to assist one another during domestic crises. Conversely, states which engage one another negatively are more likely to engage in MIDs and more likely to attempt to destabilize one another during domestic crisis."
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+geometry: margin=1in
+fontfamily: mathpazo
+fontsize: 10pt
+spacing: double
+bibliography: /Users/localadmin/Dropbox/Research/Bibliography/library.bib
+biblio-style: apsr
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F)
+## Load a bunch of dependencies
+if (!'pacman' %in% installed.packages()) install.packages('pacman')
+pacman::p_load(
+  data.table, survAUC, stargazer, pROC, sampleSelection, rms
+  , nnet, miscFuncs, effects, caret, e1071, caTools
+  )
+```
+
+
+```{r MainAnalysis, cache=F, include=FALSE}
+
+###############################################################################
+##
+## MainAnalysis.R
+## 
+## Purpose: Run a set of models on the finalized data.
+##
+## Depends on: MergeAnalysisData.R
+##
+## Function: Loads finished data, does some on-the-fly processing,
+##  and runs a set of predictive models.
+##
+## Output: .Rdata objects containing models.
+##
+## Output files: 
+##  - TBA
+##
+###############################################################################
+
+## Set random seed
+set.seed(2035)
+
+## Set working directory
+
+setwd('/Users/localadmin/Dropbox/Research/Cheaptalk')
+# setwd('/Users/localadmin/Dropbox/Research/CheapTalk')
+
+
+###############################################################################
+##
+## Load in data on political relevance for subsetting data
+##
+###############################################################################
+
+## Political relevance (1995 - 2001)
+## Object: yearly_relevance (UNDIRECTED)
+load('./Data/AnalysisData/yearly_relevance.Rdata')
+
+
+###############################################################################
+##
+## Load in data for analysis
+##
+###############################################################################
+
+load('./Data/AppendixData/yearly_data.Rdata')
+
+###############################################################################
+##
+## Load in CAMEO code data
+##
+###############################################################################
+
+cameocodes <- data.table::fread('./Paper/PlotsTables/CameoScores.csv')
+
+###############################################################################
+##
+## Generate some on-the-fly variables
+##
+###############################################################################
+
+## One-year lead for MID occurrence (DV)
+yearly_data[, lag_midstart := shift(mid_start, 1, type = 'lead'), by = c('statea', 'stateb')]
+yearly_data[is.na(lag_midstart) & year == 2000, lag_midstart := 0]
+
+## One-year lead for alliance formation (DV)
+yearly_data[, lag_allianceformation := shift(alliance_formed, 1, type = 'lead'), by = c('statea', 'stateb')]
+
+## One-year lead for civil war intervention (DV)
+yearly_data[, lag_civilconflict := shift(civil_conflict, 1, type = 'lead'), by = c('statea', 'stateb')]
+yearly_data[, lag_supportstate := shift(support_state, 1, type = 'lead'), by = c('statea', 'stateb')]
+
+
+## Cumulative sum of events (for stratification)
+yearly_data[, sum_mids := NA_real_]
+yearly_data[, sum_mids := cumsum(mid_start), by = c('statea', 'stateb')]
+yearly_data[, sum_mids := shift(sum_mids, 1, type = 'lag'), by = c('statea', 'stateb')]
+yearly_data[is.na(sum_mids), sum_mids := 0]
+
+## Generate B -> A ICEWS weight
+temp_data <- yearly_data[, list(year, statea, stateb, weight_pos, weight_neg)]
+setnames(temp_data, c('year', 'stateb', 'statea', 'weight_pos_ba', 'weight_neg_ba'))
+yearly_data <- merge(yearly_data, temp_data, by = c('year', 'statea', 'stateb'))
+
+## Calculate undirected ICEWS weight variables
+yearly_data[, mean_weight_pos := rowMeans(as.matrix(yearly_data[, list(weight_pos, weight_pos_ba)]))]
+yearly_data[, mean_weight_neg := abs(rowMeans(as.matrix(yearly_data[, list(weight_neg, weight_neg_ba)])))]
+yearly_data[, mean_weight_net := mean_weight_pos - mean_weight_neg]
+# yearly_data[, min_weight := pmin(weight, weight_ba, na.rm = T)]
+# yearly_data[, max_weight := pmax(weight, weight_ba, na.rm = T)]
+
+## Dyad ID variable
+yearly_data[, dyad_id := paste(statea, stateb, sep = '_')]
+
+## Re-sort and remove duplicates
+setkeyv(yearly_data, c('year', 'statea', 'stateb'))
+yearly_data <- subset(unique(yearly_data))
+
+
+## Temp hack for trade data and MIDs in 2001
+yearly_data[is.nan(trade_flow), trade_flow := 0]
+yearly_data[is.na(trade_flow), trade_flow := 0]
+
+yearly_data[is.na(mid_start) & year == 2000, mid_start := 0]
+yearly_data[is.na(mid_start) & year == 2001, mid_start := 0]
+yearly_data[is.na(mid_start) & year == 2002, mid_start := 0]
+
+###############################################################################
+##
+## Transform the data to generate TWO undirected-dyad data sets:
+##  1. Politically relevant dyads ONLY
+##  2. All dyads
+##
+###############################################################################
+
+## Data set 1: Merge in data on political relevance. 
+##  This will both subset the number of states/dyads,
+##  AND change from A->B/B->A to A--B undirected dyad format.
+
+yearly_data_relevant <- merge(
+  yearly_data
+  , yearly_relevance
+  , by = c('year', 'statea', 'stateb')
+)
+
+
+## Data set 2: Subset data from directed-dyad to undirected-dyad format
+yearly_data_full <- yearly_data[
+  as.integer(as.factor(statea)) >
+    as.integer(as.factor(stateb))
+  ]
+
+##### Pre-processing function to generate training/test sets
+prep_data <- function(input_data, out_var = 'mid', out_year = 2000){
+  ## Subset by year <= 2001
+  analysis_data <- input_data[year <= out_year]
+  
+  ## Keep only complete cases
+  analysis_data <- analysis_data[
+    complete.cases(
+      analysis_data[
+        , 
+        list(lag_midstart, mean_weight_pos, mean_weight_neg
+             , alliance_present, trade_flow
+             , igo_overlap, relig_distance, joindem
+             , relcap, polity_diff)
+        ]
+    )
+    ]
+  
+  ## Time variable starting with 1
+  analysis_data[, time := year - 1994]
+  
+  ## Convert year to factor for modeling
+  analysis_data[, year := as.factor(year)]
+  
+  
+  ## Generate vector of test data dyads
+  dyad_ids <- unique(analysis_data$dyad_id)
+  n_dyads <- length(dyad_ids)
+  n_sample <- as.integer(n_dyads*.3)
+  sample_dyads <- sample(dyad_ids, n_sample, replace = F)
+  
+  ##### Process according to desired task
+  if (out_var == 'mid'){
+    
+    ## 0 - left-censored
+    analysis_data[, status := 0]
+    ## 1- Event at time t
+    analysis_data[lag_midstart == 1, status := 1]
+    ## 2 - right-censored
+    # analysis_data[year == 2001 & lag_midstart == 0, status := 2]
+    
+    ## Subset into training/testing data
+    train_rows <- createDataPartition(analysis_data$lag_midstart, times = 1, p = 0.7)
+    train_rows <- train_rows$Resample1
+    train_data <- analysis_data[train_rows]
+    test_data <- analysis_data[-train_rows]
+    
+    
+  } else if (out_var == 'alliance'){
+    ## 0 - left-censored
+    analysis_data[, status := 0]
+    ## 1- Event at time t
+    analysis_data[lag_allianceformation == 1, status := 1]
+    ## 2 - right-censored
+    # analysis_data[year == 2001 & lag_midstart == 0, status := 2]
+    
+    analysis_data[, sum_ally_years := sum(alliance_present), by = c('statea', 'stateb')]
+    analysis_data[, constant_alliance := 0L]
+    analysis_data[sum_ally_years == 6, constant_alliance := 1L]
+    # analysis_data <- analysis_data[sum_ally_years < 6]
+    
+    ## Subset into training/testing data
+    train_rows <- createDataPartition(analysis_data$lag_allianceformation, times = 1, p = 0.7)
+    train_rows <- train_rows$Resample1
+    train_data <- analysis_data[train_rows]
+    test_data <- analysis_data[-train_rows]
+    
+    
+  } else if (out_var == 'intervention'){
+    
+    analysis_data[is.na(analysis_data$lag_supportstate), lag_supportstate := 0]
+    analysis_data[, lag_supportstate := factor(lag_supportstate)]
+    analysis_data[, lag_supportstate := relevel(lag_supportstate, '0')]
+    
+    analysis_data <- analysis_data[lag_civilconflict == 1]
+    
+    ## Subset into training/testing data
+    train_rows <- createDataPartition(analysis_data$lag_supportstate, times = 1, p = 0.7)
+    train_rows <- train_rows$Resample1
+    train_data <- analysis_data[train_rows]
+    test_data <- analysis_data[-train_rows]
+    
+    
+  }
+
+  ## Return data as list
+  return(list(train_data, test_data))
+}
+
+
+##### Generate training and testing data
+cleaned_data_relevant <- prep_data(yearly_data_relevant)
+mid_train_relevant <- cleaned_data_relevant[[1]]
+mid_test_relevant <- cleaned_data_relevant[[2]]
+
+
+###############################################################################
+##
+## Model set 1
+##  DV: MID onset
+##  Data: Relevant dyads
+##
+##  Modeling approach: logistic regression
+##
+###############################################################################
+
+## Model 1: Functional variables 
+##  (trade, capacity, alliance)
+mid_logit_1 <- glm(
+  lag_midstart
+  ~ alliance_present
+  + log(trade_flow + 1)
+  + relcap
+  + sum_mids
+  + year
+  , data = mid_train_relevant
+  , family = binomial(link = 'logit')
+)
+
+
+## Model 2: Adding normative/structural variables 
+##  (joint democracy, religious distance, IGOs)
+mid_logit_2 <-  glm(
+  lag_midstart
+  ~ alliance_present
+  + log(trade_flow + 1)
+  + igo_overlap
+  + relig_distance
+  + joindem
+  # + polity_diff
+  # + joindem:polity_diff
+  + relcap
+  + sum_mids
+  + year
+  , data = mid_train_relevant
+  , family = binomial(link = 'logit')
+  )
+
+
+## Model 3.0: Adding low-salience trust variable
+mid_logit_30 <- glm(
+  lag_midstart
+  ~ mean_weight_net
+  + alliance_present
+  + log(trade_flow + 1)
+  + igo_overlap
+  + relig_distance
+  + joindem
+  # + polity_diff
+  # + joindem:polity_diff
+  + relcap
+  + sum_mids
+  + year
+  , data = mid_train_relevant
+  , family = binomial(link = 'logit')
+)
+
+summary(mid_logit_30)
+
+
+########## Calculate model fit on TRAINING data
+
+## Model 1 (baseline)
+pred_mid_m1 <- data.frame(
+  lag_midstart = mid_train_relevant$lag_midstart
+  , pred = predict(mid_logit_1, newdata = mid_train_relevant, type = 'response')
+)
+
+## Model 2 (no weight)
+pred_mid_m2 <- data.frame(
+  lag_midstart = mid_train_relevant$lag_midstart
+  , pred = predict(mid_logit_2, newdata = mid_train_relevant, type = 'response')
+)
+
+## Model 3.0 (positive weight)
+pred_mid_m30 <- data.frame(
+  lag_midstart = mid_train_relevant$lag_midstart
+  , pred = predict(mid_logit_30, newdata = mid_train_relevant, type = 'response')
+)
+
+## Calculate AUC
+auc(pred_mid_m1$lag_midstart, pred_mid_m1$pred)
+auc(pred_mid_m2$lag_midstart, pred_mid_m2$pred)
+auc(pred_mid_m30$lag_midstart, pred_mid_m30$pred)
+
+
+########## Calculate model fit on TESTING data
+
+## Model 1 (baseline)
+pred_mid_m1 <- data.frame(
+  lag_midstart = mid_test_relevant$lag_midstart
+  , pred = predict(mid_logit_1, newdata = mid_test_relevant, type = 'response')
+)
+
+## Model 2 (no weight)
+pred_mid_m2 <- data.frame(
+  lag_midstart = mid_test_relevant$lag_midstart
+  , pred = predict(mid_logit_2, newdata = mid_test_relevant, type = 'response')
+)
+
+## Model 3.0 (positive weight)
+pred_mid_m30 <- data.frame(
+  lag_midstart = mid_test_relevant$lag_midstart
+  , pred = predict(mid_logit_30, newdata = mid_test_relevant, type = 'response')
+)
+
+## Calculate AUC
+auc(pred_mid_m1$lag_midstart, pred_mid_m1$pred)
+auc(pred_mid_m2$lag_midstart, pred_mid_m2$pred)
+auc(pred_mid_m30$lag_midstart, pred_mid_m30$pred)
+
+
+###############################################################################
+##
+## Model set 2
+##  DV: Alliance formation
+##  Data: Relevant dyads
+##
+## Modeling approach: Heckman selection model
+##  First stage: alliance present/absent
+##  Second stage: alliance formation
+##
+###############################################################################
+
+##### Generate training and testing data
+cleaned_data_relevant <- prep_data(yearly_data_relevant, 'alliance')
+ally_train_relevant <- cleaned_data_relevant[[1]]
+ally_test_relevant <- cleaned_data_relevant[[2]]
+
+## Model 1: functional variables only
+ally_1 <- selection(
+  constant_alliance == 0
+  ~ log(trade_flow + 1)
+  + relcap
+  , lag_allianceformation
+  ~ sum_mids
+  + log(trade_flow + 1)
+  + relcap
+  + year
+  , data = ally_train_relevant
+)
+
+## Model 2: add constructivist structural variables
+ally_2 <- selection(
+  constant_alliance == 0
+  ~ log(trade_flow + 1)
+  + igo_overlap
+  + relig_distance
+  + joindem
+  + relcap
+  , lag_allianceformation
+  ~ sum_mids
+  + igo_overlap
+  + relig_distance
+  + joindem
+  + log(trade_flow + 1)
+  + relcap
+  + year
+  , data = ally_train_relevant
+)
+
+## Model 3.0: positive weight in final stage
+ally_30 <- selection(
+  constant_alliance == 0
+  ~ log(trade_flow + 1)
+  + igo_overlap
+  + relig_distance
+  + joindem
+  + relcap
+  , lag_allianceformation
+  ~ mean_weight_net
+  + sum_mids
+  + igo_overlap
+  + relig_distance
+  + joindem
+  + log(trade_flow + 1)
+  + relcap
+  + year
+  , data = ally_train_relevant
+)
+
+
+summary(ally_1)
+summary(ally_2)
+summary(ally_30)
+
+################################################################################
+## Calculate model fit on TRAINING data
+################################################################################
+
+## Model 1: no weight
+pred_ally_m1 <- data.frame(
+  lag_allianceformation = ally_train_relevant$lag_allianceformation
+  , pred = predict(ally_1, newdata = ally_train_relevant, part = 'outcome', type = 'unconditional')
+)
+
+## Model 2: no weight
+pred_ally_m2 <- data.frame(
+  lag_allianceformation = ally_train_relevant$lag_allianceformation
+  , pred = predict(ally_2, newdata = ally_train_relevant, part = 'outcome', type = 'unconditional')
+)
+
+## Model 3.0: positive weight
+pred_ally_m30 <- data.frame(
+  lag_allianceformation = ally_train_relevant$lag_allianceformation
+  , pred = predict(ally_30, newdata = ally_train_relevant, part = 'outcome', type = 'unconditional')
+)
+
+
+## Calculate AUC
+auc(pred_ally_m1$lag_allianceformation, pred_ally_m1$pred)
+auc(pred_ally_m2$lag_allianceformation, pred_ally_m2$pred)
+auc(pred_ally_m30$lag_allianceformation, pred_ally_m30$pred)
+
+
+
+################################################################################
+## Calculate model fit on TEST data
+################################################################################
+
+## Model 1: no weight
+pred_ally_m1 <- data.frame(
+  lag_allianceformation = ally_test_relevant$lag_allianceformation
+  , pred = predict(ally_1, newdata = ally_test_relevant, part = 'outcome', type = 'unconditional')
+)
+
+## Model 2: no weight
+pred_ally_m2 <- data.frame(
+  lag_allianceformation = ally_test_relevant$lag_allianceformation
+  , pred = predict(ally_2, newdata = ally_test_relevant, part = 'outcome', type = 'unconditional')
+)
+
+## Model 3.0: positive weight
+pred_ally_m30 <- data.frame(
+  lag_allianceformation = ally_test_relevant$lag_allianceformation
+  , pred = predict(ally_30, newdata = ally_test_relevant, part = 'outcome', type = 'unconditional')
+)
+
+
+## Calculate AUC
+auc(pred_ally_m1$lag_allianceformation, pred_ally_m1$pred)
+auc(pred_ally_m2$lag_allianceformation, pred_ally_m2$pred)
+auc(pred_ally_m30$lag_allianceformation, pred_ally_m30$pred)
+
+
+###############################################################################
+##
+## Model set 3
+##  DV: Choice to intervene and whether to intervene positive/negative
+##
+##  Modeling approach: Multinomial model
+##    Baseline: 0 (do nothing)
+##    Level 1: -1 (intervene to help rebels)
+##    Level 2: +1 (intervene to help state)
+##
+##
+###############################################################################
+
+##### Generate training and testing data
+set.seed(2035)
+cleaned_data_relevant <- prep_data(yearly_data_relevant, 'intervention')
+inter_train_relevant <- cleaned_data_relevant[[1]]
+inter_test_relevant <- cleaned_data_relevant[[2]]
+
+## Model 1: Functional variables 
+##  (trade, capacity, alliance)
+inter_1 <- multinom(
+  lag_supportstate
+  ~ alliance_present
+  + log(trade_flow + 1)
+  + relcap
+  + sum_mids
+  + year
+  , data = inter_train_relevant
+)
+
+
+## Model 2: Adding normative/structural variables 
+##  (joint democracy, religious distance, IGOs)
+inter_2 <-  multinom(
+  lag_supportstate
+  ~ alliance_present
+  + log(trade_flow + 1)
+  + igo_overlap
+  + relig_distance
+  + joindem
+  + relcap
+  + sum_mids
+  + year
+  , data = inter_train_relevant
+  , weights = ifelse(inter_train_relevant$lag_supportstate == '0', 1, 25)
+)
+
+
+## Model 3.0: Adding low-salience trust variable
+##  (mean POSITIVE weight)
+inter_30 <- multinom(
+  lag_supportstate
+  ~ mean_weight_net
+  + alliance_present
+  + log(trade_flow + 1)
+  + igo_overlap
+  + relig_distance
+  + joindem
+  + relcap
+  + sum_mids
+  + year
+  , data = inter_train_relevant
+  , weights = ifelse(inter_train_relevant$lag_supportstate == '0', 1, 25)
+)
+
+summary(inter_1)
+summary(inter_2)
+summary(inter_30)
+
+
+## Model 2: no weight
+pred_inter_m2 <- data.frame(
+  lag_supportstate = inter_test_relevant$lag_supportstate
+  , pred = predict(inter_2, newdata = inter_test_relevant)
+)
+
+## Model 3.0: positive weight
+pred_inter_m30 <- data.frame(
+  lag_supportstate = inter_test_relevant$lag_supportstate
+  , pred = predict(inter_30, newdata = inter_test_relevant)
+)
+
+
+##### Generate confusion matrices
+caret:: confusionMatrix(table(pred_inter_m2$lag_supportstate, pred_inter_m2$pred, dnn = c('Observed', 'Predicted')))
+caret:: confusionMatrix(table(pred_inter_m30$lag_supportstate, pred_inter_m30$pred, dnn = c('Observed', 'Predicted')))
+
+###############################################################################
+##
+## Additional outputs
+##
+###############################################################################
+
+##### Correlation matrix
+corr_data <- cor(
+  yearly_data_relevant[
+    , 
+    list(
+      mean_weight_net, alliance_present, trade_flow, igo_overlap, relig_distance, joindem, relcap
+      )
+    ]
+  , use = 'complete.obs'
+  )
+
+rownames(corr_data) <- c('NetCoop', 'Alliance', 'Trade', 'IGO', 'ReligDist', 'JointDem', 'RelCap')
+colnames(corr_data) <- c('NetCoop', 'Alliance', 'Trade', 'IGO', 'ReligDist', 'JointDem', 'RelCap')
+
+##### Summary statistics
+sum_data <- rbind(mid_train_relevant, mid_test_relevant)
+sum_data <- sum_data[
+  ,
+  list(
+    mean_weight_pos, mean_weight_neg, log(trade_flow+1), igo_overlap
+    , relig_distance, joindem, relcap, alliance_formed, mid_start
+    , ifelse(support_state == 1, 1, 0), ifelse(support_state == -1, 1, 0)
+    )
+  ]
+sum_data[is.na(V10), V10 := 0]
+sum_data[is.na(V11), V11 := 0]
+```
+
+Word count: 12,006 excluding appendix and abstract.
+
+"Whoever can be trusted with very little can also be trusted with much, and whoever is dishonest with very little will also be dishonest with much" (Luke 16:10, NIV Translation). 
+
+# Introduction
+
+Quantitative international relations scholarship has focused overwhelmingly on recording and explaining major changes in interstate behavior such as armed conflict, formation and breaking of alliances, and waxing or waning of trade flows. This makes sense: given limited resources and time, scholars focus their efforts on explaining outcomes that affect the lives and wellbeing of thousands or millions of people. The limitation of this approach, however, is that it produces a theoretical and empirical landscape limited to only high-intensity interactions. Theories and data alike are tailored to explaining the highest 'peaks' and deepest 'valleys' over time in international relations, and have little to say about everything that goes on in between.
+
+Although they are generally dismissed as 'cheap talk', the level and tone of low-cost, day-to-day verbal interactions between states can be useful in predicting when and how high-cost forms of cooperation and conflict occur. This is because these low-cost events make up the vast majority of *de facto* foreign policy --– they set the tone of interstate relations, and over time, aid in building mutually friendly or oppositional identities. States that cooperate on low-intensity issues and frame one another as friends, or at least non-threats, are able to build trust over time. States that trust each other are more not just more likely to avoid major conflict; they are more likely to actively cooperate on important economic and security issues. Conversely, states that view one another with distrust or acrimony are not only less likely to actively cooperate, but more likely to let disputes escalate to the level of militarized conflict.
+
+# Literature review and theory
+
+This analysis is rooted in constructivist literature focusing on normative or identity-based factors explaining cooperation and conflict between states. With minor variations, scholars of the Kantian peace point out the importance of a triad of factors –- shared democratic institutions [e.g. @Doyle1986a, 1158; @Russett1993, 626; @Danilovic2007, 398-400], economic interdependence [e.g. @Oneal2003, 287-288], and international organizations and law [e.g. @Dorussen2008, 442] -– in helping states avoid military crises, and in preventing them from escalating to all-out war when they do occur. Although it is not without its critics [e.g. @Gartzke2013, 174-175; @Ward2007, 584-585] the finding that stable democracies who share strong economic ties and membership in the same international organizations are less likely to engage in militarized conflict with one another is one of the more prominent findings in the last half-century of political science [e.g. @Oneal2003, 388-398].
+
+[^1]: Various scholars within this broad body of work have also used the terms 'democratic peace' or 'liberal peace'. For the sake of simplicity, I use the term 'Kantian peace' as a general term.
+
+However, the Kantian peace literature is necessarily limited, by its very nature, to explaining only a subset of international relations. Because it emphasizes the importance of democratic institutions (in many cases, more so than economic ties or international law) the theory has less to say about when and why peaceful relations emerge between non-democratic dyads, whether they are mutual autocracies (as a very general term) or mixed democratic/non-democratic pairs. Peaceful relations and cooperation may not be as common in these cases as they are in democratic dyads, but `oases’ of peaceful interaction in space and time exist and are of interest to international relations scholars [@Kivimaki2001, 6].
+
+Constructivist scholarship presents a generalization of the Kantian peace, emphasizing the normative and identity-based factors that bind state dyads together and pointing out that shared norms, ideas, and identities are not unique to democratic dyads, nor does the general mechanism of 'norms' always lead to cooperation [e.g. @Ruggie1998, 863; @Finnemore2001, 402-404]. Work in this tradition attempts to identify when, where, and how shared *cooperative* identities and norms can emerge across democratic, non-democratic, and mixed-regime dyads. Constructivist scholars generally agree that institutional and economic factors matter, but emphasize a broader role for cooperative norms, ideas, and identities in promoting peace between states [@Wendt1999, 229]. States that trust one another are more likely to cooperate with one another and less likely to engage in conflict because they have acquired some level of "… mutual responsiveness, that is, they may gain the ability to more or less predict one another’s behavior and come to *know* each other as trustworthy" [@Adler1997a, 254]. Shared material or political characteristics may increase the probability that states will view each other as similar or trustworthy, but are themselves neither necessary nor sufficient conditions for cooperation [@Kivimaki2001, 19]. Rather, these similarities lower barriers to communication and trust, making it more likely that states will recognize – and over time, reinforce – some level of shared identity or kinship with one another [@Doyle1986a, 1158; @Ruggie1998, 862-863].
+
+This literature emphasizes that it is *how states view one another*, not just empirical factors like resources or institutions, that governs patterns of conflict and cooperation: states that perceive one another as fundamentally similar are less likely to engage in conflict [@Peceny1997, 416-417]. By contrast, states that define their identities as mutually conflictual or alien tend not just to lack common ground for communication and cooperation, but actually infer oppositional motivations when explaining and assessing the actions of their partners [@RisseKappen1995, 502-504]. This tendency for states to 'believe the worst' about one another makes cooperation much more difficult, and raises the likelihood of escalation or even pre-emptive conflict as a form of self-defense against a dangerous and unreasonable opponent. Identities and ideas are key drivers of state behavior that often, but not always, correlate with materialistic or objective similarities in regime type, geographic or cultural proximity, or economic interdependence. The emergence of shared identities is possible outside of the democratic-dyad case, even if it less common [@Peceny2002, 18-19].
+
+Communication plays a crucial role in the emergence of shared norms and identities. Repeated positive interactions can lead to a fundamental restructuring of identities: a blurring of the lines between 'us' and 'them' that are taken to be exogenous and unchanging in positivist theories of international relations [@Wendt1999, 246; @Ashizawa2008, 573-575]. Actions and identities are mutually constitutive: "...even identities are generated in party by interaction – both the generic identities of states qua states and their specific identities" [@Ruggie1998, 879]. Cooperative interactions between states serve as self-reinforcing evidence of an underlying shared identity; as this sense of collective identity is shared by both societies, cooperation and coordination in foreign policy becomes easier and more attractive. Repeated interactions also provide information about one another’s incentives and preferences:
+
+> Social acts thus help generate expectations among states about each other’s behavior in future interactions, with each subsequent social act potentially reinforcing ('reproducing') or modifying these meanings and expectations. If actions are repeated frequently and consistently enough (that is, if they are 'recursive'), their products become institutionalized. This makes them appear to be relatively stable and external elements of objective social reality, and generates a certain degree of path dependence [@Kahl1998, 104].
+
+The 'social acts' Kahl identifies are rarely operationalized in empirical work. Instead, tests of the constructivist peace often utilize structural variables identifying similarities between states [@Corbetta2013, 373-374]. Like other social entities, states that are closer along economic, political, or socio-cultural dimensions are more 'alike'; they should therefore be able to understand one another better, should communicate more effectively, and should ultimately be able to find common ground for cooperation more easily than states that do not share these characteristics [@Blau1977, 27-29; @Popielarz1995, 717-719].
+
+However, states with shared characteristics do not automatically cooperate with one another [@RisseKappen1995, 495]. The assumption that shared characteristics necessarily lead to affinity can be misleading; many states with long histories of violence share cultural practices, ethnic demographics, and other important characteristics; in some cases, shared cultural characteristics are actually associated with an increase in the likelihood of conflict between states [@Gartzke2006, 77-78]. Using shared characteristics as a measure of shared identity, therefore, can be something of a pitfall. These structural analyses are insightful and valuable; however, they underestimate the importance of interaction and communication, not just underlying similarity, in building shared identity.
+
+Given the theoretical emphasis on interactions rather than shared characteristics as the driving force behind identity formation, why does the extant literature focus primarily on structure? I argue that there are two reasons that this mechanism has seen little empirical examination. First, there has been relatively little effort in both the theoretical and data-gathering realms towards identifying acts of international *cooperation* which are essential to measuring friendly international relations. Scholars in conflict studies tend to treat peace as simply the absence of armed conflict. However, a more stable peace should logically involve active cooperative engagement, rather than simply a lack of war. Instead, scholarly efforts have largely focused on highly salient acts of conflict such as militarized disputes. This makes sense, given the limited resources available to scholars and the substantive importance of avoiding tragedy and loss of life. The result, however, is that we have a much more detailed theories and data sets describing international conflict than we do international cooperation. If conflict and cooperation are opposite ends of some relational spectrum, as @Ward1982 [118-120] suggests, then better measures of international cooperation may help us better understand and avoid international conflict.
+
+The second factor limiting our ability to measure and explain trust-building between states is the lack of attention paid to low-intensity, routine cooperative and conflictual interactions between states[^2]. Most of the outcomes we are interested in as scholars are, naturally, high-intensity events that involve changes in state power, human casualties, large increases in economic indicators, and so on. However, these outcomes are relatively rare compared to the vast majority of interactions that make up day-to-day international relations. Their rarity, and their severity, make these events hard to predict in isolation. Military conflicts, treaty agreements, and other important acts of conflict and cooperation do not occur in isolation, and they do not appear suddenly. Rather, these events are usually the culmination of months or years of low-intensity interactions as states negotiate, posture, and otherwise assess whether or not they view one another more as partners or as threats. 
+
+[^2]: One notable exception to this trend is the work of @Jungblut2002 linking the *issue area* of low-intensity conflict, using the COPDAB events data set, to the probability of militarized interstate dispute. However, they limit their analysis to only conflictual event, ignoring acts of interstate cooperation.
+
+States interact near-constantly through diplomatic personnel, government and military delegations, and other forms of political interaction. These run-of-the-mill incidents usually go unrecorded because they are generally not salient. It is not particularly interesting, in isolation, that the United Kingdom government reassurances of friendship to Saudi Arabian leadership [@BBC2016] or that Chad and Sudan held a meeting to discuss border security [@Tribune2016]. These individual events do not decisively impact the economic or security environment of the states involved, and as such, they tend to be treated as unimportant. When taken as part of a whole, however, we can use these events to infer underlying patterns of trust and enmity between states.
+
+A pair of states that often engages in low-intensity forms of cooperation with one another such as symbolic gestures, statements of support, collaboration on disaster relief or scientific research and so on, is engaging in trust-building behavior. These routine actions do not *individually* shape interstate relations, but over time, they signal and reinforce shared norms and identities of cooperation. Populations that observe their government engaging in positive relations with another state are more likely to internalize these norms, leading to a virtuous cycle in which state leadership and domestic populations believe that their counterparts in other states are fundamentally trustworthy or friendly. The result is a normalization of cooperation between these states.
+
+Positive interactions over time both signal and create shared identity between states. This not only makes cooperation easier, broadly speaking, but also lowers barries for states to engage in higher-cost forms of cooperation that provide greater mutual benefit, but are also more costly and risky for the states involved. High-intensity cooperation takes such forms as as joining formal international institutions; relaxing barriers to travel or trade flows; or delegating some level of national security to another actor through a defense pact or military alliance. These policy decisions involve significant risk: by engaging in these forms of cooperation, states may open themselves up to defection and the loss of wealth or security, as has been pointed out repeatedly in functionalist studies of interstate bargaining [e.g. @Fearon1998b, 271-273]. States choose their partners carefully, and are more likely to engage in high-intensity cooperation with partners with which they share some sense of identity or trust; previous experience serves as a foundation for future cooperation. 
+
+Conversely, negative interactions both signal and create a sense of distrust in which each state views its partner as enemy or alien. States with acrimonious relations identify one another as opponents, making cooperation more difficult and conflict easier. This is also a self-reinforcing cycle: as states define themselves in opposition to one another, verbal and material conflict becomes the order of the day in how these states interact. This also means that higher-cost or higher-risk forms of conflict become a more viable option to solve disputes or divide stakes. If an opponent cannot be trusted or understood, it is difficult to identify any shared ground on which an agreement can be structured, and little reason to expect such an agreement to be kept.
+
+High-intensity forms of conflict are those that involve significant political, economic, or human cost. War is the clearest example of high-intensity conflict, as it can involve major costs up to the existence of the state itself. Another example is the use conomic sanctions, a common tool of coercion that exacts costs on both the initiator and the target. States can also engage rivals indirectly, for example by giving material or financial aid to insurgent or terrorist groups operating within another country. In all such cases, states are willingly engaging in costly or risky behavior in order to either (1) gain some greater stake or (2) exact some (proportionally greater) cost on another party. 
+
+Low-intensity interactions both signal and create relationships between states – over time, these repeated interactions define states’ identities vis-à-vis one another, either as partners/friends or as rivals/enemies. States are more likely to engage in costly, high-intensity forms of cooperation with other states with whom they share a friendly relationship; conversely, states that view one another as untrustworthy or `alien’ are unlikely to risk betrayal through cooperation, and may view high-intensity conflict as the only viable foreign policy tool in dealing with one another.
+
+# Hypotheses
+
+From this theory linking low-intensity interactions to underlying bonds of trust or distrust, I derive several testable hypotheses. The key predictor in testing these hypotheses is the level of cooperation or conflict present in low-intensity interactions between states over time. First, I expect that states that cooperate more on a day-to-day basis are less likely to experience high-intensity forms of international conflict. States that share norms of trust and cooperation are able to engage in peaceful forms of dispute resolution; those that view one another with acrimony are less able and willing to negotiate, or place much faith in the outcome of negotiations [@RisseKappen1995, 500-502]. When disputes occur between states that distrust one another, they are more likely to escalate in severity. As such, I expect that by looking at patterns of low-intensity cooperation and conflict in previous time periods, we can better explain and predict of militarized conflict in the current time period.
+
+- Hypothesis 1: The greater the level of low-cost verbal cooperation (conflict) between states *i* and *j*, the lower (higher) the probability of a MID occurring between these two states.
+
+Not only are cooperative state dyads less likely to experience high-intensity conflict, they are also more likely to engage in high-intensity cooperation. One interesting form of costly interstate cooperation is the choice to establish formal security agreements, which I generalize with the term 'alliances'. Alliances are credible commitments between states to refrain from attacking one another, or support one another in issues of national security. They are not entered into lightly, as they involve sacrificing some level of autonomy over national defense by delegating security issues to a party outside state control [@Morrow1991, 904-905], as well as a credible commitment to intervening in a partner’s conflict should one arise [@Smith1998, 317-318]. Alliances represent significant costs and risks; as such, they are an excellent example of the type of high-intensity cooperation that requires some underlying level of trust or affinity between states. 
+
+- Hypothesis 2: The greater the level of low-intensity cooperation (conflict) between states *i* and *j*, the higher (lower) the probability that these states establish a formal alliance.
+
+Finally, I expect that the underlying relationship between states affects their propensity to intervene directly in one another’s domestic affairs, particularly when one state is experiencing civil conflict. Intervention in another state’s conflict is another example of a high-intensity, costly foreign policy decision. Intervention does not just have direct material costs: failed interventions can lead to domestic backlash [@Aydin2010, 51], or even escalation into interstate military disputes if the target state objects to being meddled with [@Gleditsch2008, 480-482].
+
+States that see friends and allies undergoing civil conflict are likely to offer assistance – financial, material, or even direct military involvement – to the beleaguered government. States that share a relationship of trust and cooperation are more likely to intervene to support one another during domestic crises in order to keep a stable relationship, signal norms of cooperation and support, and set a precedent for future engagement[^3]. States that distrust one another are more likely to see civil conflict as an opportunity to impose costs on a rival: by supporting insurgent movements in another state, the intervener may hope to weaken its opponent by increasing the intensity, duration, and costs of civil conflict, or even force a regime change if the existing government is overthrown [@BalchLindsay2008, 349-351; @Lounsbery2016, 128]. I expect that states that share an underlying level of trust are more likely to intervene to support one another, whereas states that share mutual acrimony are more likely to intervene to undermine one another.
+
+[^3]: See [@Corbetta2013] for an example of this logic tested in states’ supporting or opposing one another during interstate conflict.
+
+- Hypothesis 3a: Given a state dyad (*i, j*) in which state *j* is experiencing civil conflict, the greater the level of low-intensity cooperation (conflict) between (*i, j*), the higher (lower) the probability that state *i* will intervene to support insurgents in state *j*. 
+
+- Hypothesis 3b: Given a state dyad (*i, j*) in which state *j* is experiencing civil conflict: the greater the level of low-intensity cooperation (conflict) between (*i, j*), the higher (lower) the probability that state *i* will intervene to support the government in state *j*. 
+
+# Research design
+
+## Event data to measure trust and distrust
+
+Interactions and identities are mutually constitutive. Positive interactions lead to the establishment of shared norms and identities between states, while negative interactions establish norms of animosity and oppositional identities. This means that –- at least to a limited extent -– we can make inferences about shared identities by observing interactions between states. States that share cooperative norms and identities are more likely not just to avoid military conflict, but to engage in active forms of cooperation.
+
+Events data provide a promising avenue for operationalizing these interaction-based theories of identity formation. These are highly granular data structures in which a single observation corresponds to a discrete interaction between two parties: "an occurrence standing out against the run-of-the-mill course of everyday life, a discrete unit of behavior that can be pinpointed in time and space" [@Merritt1994, 21]. These data provide the closest thing we have to 'ground-level' metrics of interstate interaction. Although events data has recently experienced a surge in popularity, scholars have been codifying and analyzing politicized events for over a century [@Merritt1994, 19-20; @Schrodt2012, 548-550]. 
+
+Until relatively recently, the sheer workload of generating event data made it difficult to build data sets with sufficient geographic, temporal, or issue-area coverage to engage in large-scale studies of international relations. In recent years, however, significant advances in both the availability of raw data (mainly digitized news-media archives) and computational power have led to a resurgence in the collection and analysis of political event data in international relations. Large, well-funded data collection initiatives have sprung up in in many issue areas. Some [e.g. @Raleigh2010; @Sundberg2013; @Chojnacki2012] focus primarily on violence and armed conflict, while others [e.g. @Salehyan2012; @Nardulli2011] look at a broader range of events dealing with social and political unrest. A few ongoing efforts [@OBrien2010; @Schrodt2014] take a more 'universalist' approach, coding a wide cross-section of politically relevant events using formal ontologies of both cooperation and. These universalist data sets are useful in measuring the tone of low-intensity interactions between states because they adopt an extremely broad approach to gathering and coding political interactions. For example, the most common system used to codify these events data is the CAMEO ontological framework [@Gerner2009], which includes over 170 categories of interaction between states. The vast majority of these categories describe low-intensity verbal interactions: statements of support or condemnation, diplomatic meetings, offers and inquiries, and other day-to-day interactions that have little impact, in isolation, on interstate relations [@OBrien2010, 90]. 
+
+I argue that these low-cost interactions are exactly the type of 'social acts' [@Kahl1998, 104] that constitute relationships of trust or distrust between states. These are minor, low-cost interactions that, over time, reinforce identities of friendship or enmity. As such, examining the way states interact with one another may provide useful information about the underlying relationships between states. This information is not directly observable using only structural characteristics such as ethnic, religious, or linguistic similarity, and can be used in conjunction with existing variables to explain and predict high-intensity outcomes of cooperation and conflict.
+
+## Key independent variable: low-intensity interactions
+
+Measures of low-intensity cooperation and conflict were constructed using raw data from the Integrated Crisis Warning System (ICEWS) available for a 21-year period from January 1, 1995, through December 31, 2015. ICEWS uses fully automated text-analysis methods to extract event information from a specified set of news media sources [@OBrien2010]. This automated approach is orders of magnitude faster and less expensive than human coding, allowing ICEWS to process and generate a prodigious amount of data each day. News reports are coded to event data format using the Conflict And Mediation Event Ontology (CAMEO) framework [@Gerner2009], assigning each event to one of 256 specific categories, which are organized into 20 aggregated 'root codes'. 
+
+Table \@ref(tab:RootCodes) lists these root codes[^4]. ICEWS include a numeric value termed a 'Goldstein Score' based on the metric introduced by [@Goldstein1996, 376]. This measure quantifies the intensity of each event, measuring the extent to which an event can be described as 'cooperative' or 'conflictual'. This metric ranges from -10 to +10, where cooperative events receive positive scores and conflictual events receive negative scores. Higher absolute values indicate more intense cooperation or conflict: highly conflictual interactions like military violence are scored very low, while highly cooperative actions like sending humanitarian aid are scored very high.
+
+[^4]: A table describing all event-level codes in ICEWS can be found in the Appendix.
+
+\newpage
+
+```{r RootCodes, echo = F, results = 'asis'}
+rootcodes <- data.table::fread('./PlotsTables/RootCodesTable.csv')
+knitr::kable(
+  rootcodes
+  , booktabs = T
+  , col.names = c('Root Code', 'Mean Score', 'Type', 'Action')
+  , caption = 'CAMEO Root codes and Goldstein scores.'
+  , digits = 2
+)
+```
+
+The result is a daily snapshot of dyadic international interactions with information about the substantive nature of each interaction, as well as quantitative estimates of the degree to which each interaction is cooperative or conflictual. Table \@ref(tab:ICEWSEvents) shows a few ICEWS entries from early 2015 that illustrate the data structure of these event records.
+
+```{r ICEWSEvents, echo = F, fontsize = 'footnotesize', results = 'asis'}
+icews_events <- data.table::fread('./PlotsTables/ICEWSEvents.csv')
+knitr::kable(
+  icews_events
+  , booktabs = T
+  , caption = 'Sample ICEWS event records.'
+  , digits = 2
+)
+```
+
+My theory revolves around the importance of low-cost interactions. However, because ICEWS codes such a wide range of events, some ICEWs event categories overlap with the outcomes I am trying to predict. For example, while ICEWS does not include an event for 'war onset', it does include event codes for escalations of force, military battles, and other forms of wartime violence. As such, it may be misleading to use all categories of ICEWS events. 
+
+To avoid this issue of endogeneity, I focus solely on verbal interactions betweeen states. Verbal interactions are generally viewed to be a low-information method of communication, often referred to as 'cheap talk' as compared to more salient or costly forms of interaction [e.g. @Fearon1998b, 274-275; @Kydd2003, 599]. Making claims, threats, or demands is easy, while carrying out the actions implied in these statements is much more difficult. However, even cheap talk is not wholly uninformative, especially when the message it contains is repeated with little variation over time. States that habitually engage one another positively are signalling some underlying affinity: even if each individual message has little impact, over time a consistent positive tone emerges. Again, I do not claim that cooperative verbal interactions *cause* states to avoid conflict or engage in high-cost material cooperation. Instead, I argue that cooperative verbal interactions signal and (over a longer time period) contribute to an underlying sense of trust or affinity between states.
+
+The challenge is to use the ICEWS data, which contains a wide range of verbal interactions, to elicit some measure of the level or intensity of verbal cooperation and conflict between states over some time period. One way to do this might be to extract the number of events between each state dyad. However, this creates serious issues of selection bias. ICEWS relies primarily on American and European English-language sources, leading to a distinct pattern in which Western, English-language states receieve significantly more news coverage overall than smaller, non-Western, non-English-speaking states. As such, a simple count of events is likely to be heavily weighted by the behavior of these over-reported states [@Barnett2013].
+
+Rather than taking the simple count of events between state *i* and state *j*, I instead take the *share of all events* initiated by state *i* that target state *j* for each category of interaction listed in ICEWS. By calculating the percentage of *i*'s activity that targets state *j* instead of states *k, l, ..., n*, I can extract more reliable measures of the extent to which the *i, j* dyad interacts, given the level of media attention each state receives.
+
+After taking normalized levels of interaction between all state dyads, I measure the tone of verbal interaction between states using the Goldstein scores described previously, where larger positive (negative) scores indicate higher intensity of cooperation (conflict). I take the net Goldstein score of all normalized interactions between a given state dyad (*i, j*) in each year:
+
+$$
+Net\;Cooperation_{i,j} = \frac{\sum Goldstein_{i \rightarrow j} + \sum Goldstein_{j \rightarrow i}}{2}
+$$
+
+The resulting measure is a continous variable indicating the net cooperative/conflictual tone of verbal interactions between the *i, j* dyad. Scores lower than 0 indicate a relationship characterized by higher levels of verbal conflict such as accusations, demands, or threats; scores greater than 0 indicate a relationship characterized by cooperative verbal acts such as offers, promises, and statements of support. I use this measure as a rough proxy for the underlying tone of the (*i, j*) relationship: states that have a greater sense of trust or affinity with one another should express this underlying relationship fairly consistently over time through their public verbal statements. States that view one another as threats or rivals, even when they are not actively confronting one another militarily, should consistently communicate this hostile relationship in their public statements as well.
+
+<!-- [^4]: As a robustness check, I also tested a configuration including both verbal and material ICEWS events as another way of identifying low-intensity interactions. These results can be found in the Appendix: overall, I find the same substantive relationships. -->
+
+## Control variables
+
+To test the robustness of the relationship between low-cost verbal interaction and high-cost material cooperation and conflict, I control for a range of structural variables that have been repeatedly tested in the previous literature. The controls I employ are seen commonly in analyses of the Kantian or democratic peace. If I can identify statistically significant relationships between my key input and output variables in the presence of these factors, I will be more confident that these data add to our ability to predict conflict and cooperation using constructivist theory.
+
+To control for direct trade ties between states, I include yearly data on dyadic trade flows [@Barbieri2009, version 3.0]. These data represent the approximate value of trade exports from state i to state j in a given year, and are logged to account for the skew present in these data due to differences in the size of state economies. I expect that increased levels of trade between states, indicating greater economic interdependence, to be a negative indicator of high-cost conflict and a positive indicator of high-cost cooperation. Shared IGO membership is calculated using data collected by @Pevehouse2002. These data measure yearly state-level membership in a set of 495 recorded IGOs from 1816-2005. Using these state-level data, I calculate the overlap in total IGO membership between each pair of states in each year. In line with previous literature, I expect that state dyads with higher IGO overlap are are less likely to engage in high-cost conflict and more likely to engage in high-cost cooperation.
+
+To capture the effects of shared regime, I include a measure of shared democracy based on the POLITY IV data set [@Marshall2015], which attempts to codify state regimes on a -10 (fully autocratic) to +10 (fully democratic) scale. This measure is a binary variable indicating whether a pair of states are both democracies in a given year, receiving a 1 if both states have a POLITY IV score of +7 or higher. This captures the core logic of the Kantian peace, focusing on the presence of joint democracy in particular. I expect that state dyads with joint democratic institutions are less likely to engage in high-cost conflict and more likely to engage in high-cost cooperation.
+
+I also include two structural measures that loosely control for cultural and material similarities between states. First, I proxy for cultural similarity by looking at the difference in religious practice between states. To do so, I use the World Religion dataset version 1.1 [@Maoz2013]. Data on the proportion of a state's population that follows a given religion are gathered at five-year intervals, and disaggregated to yearly measures using linear interpolation. To measure the overall level of religious similarity between states, I calculate the Euclidean distance from state *i* to state *j* in a seven-dimensional space where each dimension corresponds to a state population’s share of seven major religions: Catholicism, Protestantism, Sunni Islam, Shia Islam, Buddhism, Hinduism, and Judaism. States that are closer in this multi-dimensional space have similar religious distributions in their population, while those that are farther away have increasingly different religious profiles. I expect that states with more similar religious practices are less likely to engage in high-cost conflict, and more likely to engage in high-cost cooperation [@Corbetta2013].
+
+Finally, I control for the capability ratio between states i and j using yearly National Material Capabilities data version 4.0 [@Singer1987]. This measure loosely captures the material power differential in a state dyad. While these metrics are not directly tied to the formation of shared identities, they are important to include regardless, as material and economic factors still matter. Previous work has shown somewhat mixed results as to how capability ratios affect the likelihood of conflict, but the bulk of the literature suggests that greater power asymmetry tend to decrease the probability of conflict between a pair of states [e.g. @Organski1980].
+
+## High-intensity conflict: dyadic MID
+
+To analyze the relationship between day-to-day interactions and militarized disputes, I use the dyadic militarized interstate dispute (MID) data version 3.0, created by the Correlates of War project [@Ghosn2003]. This data set disaggregates a subset of the standard MID data set [@Palmer2015] between 1993 through 2001 down to directed initiator-target dyads. I convert these directed initiator-target records to undirected dyads in which the outcome of interest for a given dyad-year is the onset (regardless of initiator) of a MID between states *i* and *j*. The dyadic MID data are the largest limiting factor in the temporal range of data used to test my hypotheses, because the overlap between ICEWS and the dyadic MID data is quite small (1995 -– 2001). The resulting data set identifies 183 dyad-years in which a MID occurred.
+
+## High-intensity cooperation: alliance formation
+
+To analyze the relationship between day-to-day interactions and alliance formation, I use the interstate alliance data set version 4.0 [@Gibler2004]. These data record the presence or absence of a formal security tie between a pair of states in a given year including defense pacts, neutrality pacts, non-aggression pacts, and entente agreements, for the years 1946-2012. For this analysis, I treat all alliance ties as equivalent. The outcome of interest in this case is whether or not states *i* and *j* enter into a formal security agreement in a given year. For the six-year period during which I have a full set of analysis variables, I observe the formation of 44 new alliances. 
+
+## High-intensity conflict and cooperation: civil conflict intervention
+
+To analyze the relationship between day-to-day interactions and third-party intervention in civil conflicts, I use the UCDP External Support database [@Hoghbladh2011]. These data record the presence and type of external intervention into a given civil conflict in a given year, along with the identity of the intervener(s). Due to the small range of data available to analyze here, I treat all forms of intervention as identical. As more data on my other dyadic variables becomes available, it would be appropriate to disaggregate by different forms of external support: committing troops to another state’s fight is a more costly and salient act than providing financial aid, for example. Here, a given dyad (*i, j*) in which state *j* is experiencing a civil conflict is coded as 0 if state *i* took no action; +1 if state *i* intervened to support state *j*; or -1 if state *i* intervened to support an insurgency in conflict with state *j*’s government. In the six-year data window available, I observe 80 interventions supporting the embattled state, and 91 interventions supporting insurgent groups.
+
+## Data structure: politically relevant dyad-years
+
+Dyad-year analyses of international relations are plagued with issues of artificially inflated sample sizes. This is the 'Cambodia-Guatemala problem': the vast majority of interstate dyads have little reason or opportunity to directly engage in significant levels of conflict or cooperation with one another, even in an age of increased globalization and technological sophistication. Including these non-relevant dyads in statistical analyses vastly inflates the available sample size, with two effects. First, the number of zeroes in the data set vastly increases, distorting the distribution of substantively viable data. Second, due to the effects of large sample size on statistical models [@Head2015, 2], this makes it more likely that analysis will produce statistically significant relationships that have virtually no substantive impact, making it easy for scholars to misunderstand or overinflate the importance of their findings.
+
+Previous work [e.g. @Maoz1996, 63-65; @Maoz2007, 106-107] suggests that subsetting the range of data to include only 'politically relevant' dyads is both theoretically and empirically more appropriate. Doing so limits a cross-national dyadic sample to only dyads that are (1) geographically proximal, allowing them opportunities for interaction, cooperation, and conflict, or (2) involve at least one major or regional power with the ability to project economic, military, and political presence over greater distance. As has been pointed out in previous literature [e.g. @Ward2007] explanations of cooperation and conflict are not applicable when the states involved simply do not interact with one another. Meta-analysis of politically relevant dyads shows that limiting the sample to politically relevant dyads may introduce slight bias, but "...find little or no evidence that such error or bias leads to erroneous estimation" [@Lemke2001, 140-141]. For the following analyses, I replicate @Maoz2007['s] research design by restricting my sample to only dyads that are geographically proximal, or that involve at least one major or regional power as defined by the authors However, as a robustness check, I also run these analyses on the full state-dyad data set ($N$ = 79,255). In all cases, the relevant coefficients are identical in direction and statistical significance. These results are available in the Appendix.
+
+The finalized data set includes data on 192 states between 1995 and 2001. After subsetting the data to only include politically relevant dyads, the total number of observations drops to 5,463 dyad-years. Summary statistics of these data are shown in Table \@ref(tab:SummaryStats), and a full correlation matrix can be found in the Appendix.
+
+```{r SummaryStats, echo = F, fig.cap = 'Summary statistics.', results = 'asis'}
+stargazer::stargazer(
+  sum_data
+  , covariate.labels = c(
+    'Positive weight', 'Negative weight', 'Log (trade)', 'IGO overlap'
+    , 'Religious distance', 'Joint democracy', 'Relative capacity'
+    , 'Alliance formation', 'MID onset', 'Intervention (state)'
+    , 'Intervention (rebel)'
+    )
+  , title = '\\label{tab:SummaryStats}Summary statistics.'
+  , nobs = F
+  , header = F
+  )
+```
+
+
+This data set is unfortunately limited due to data availability along both input and output variables. As Figure \@ref(fig:DataTimespan) shows, the overlap between all variables used in this analysis covers a six-year period between 1995 and 2001, with the key bottleneck being the limited overlap between the ICEWS data (which only goes back to 1995) and the dyadic MID data (which only goes forward to 2001). This is a limited sample, making me cautious about over-generalizing any findings. At the very least, however, this sample is a useful test case that motivates future data-gathering.
+
+
+```{r DataTimespan, echo = F, fig.cap = 'Timespan of available data.'}
+################################################################################
+## Figure: temporal overlap of data
+################################################################################
+time_data <- data.table(
+  dataset = as.factor(c(
+    'Dyadic MID', 'Alliance Formation', 'External Support', 'ICEWS Events'
+    , 'Trade Flow', 'IGO Overlap', 'Religious Distance', 'Polity Difference'
+    , 'Relative Capacity'
+  ))
+  , time_start = c(
+    1993, 1990, 1990, 1995
+    , 1990, 1990, 1990, 1990, 1990
+  )
+  , time_end = c(
+    2001, 2012, 2009, 2015
+    , 2009, 2005, 2010, 2015, 2010
+  )
+  # , open_start = c(
+  #   0, 1, 1, 0
+  #   , 1, 1, 1, 1, 1
+  # )
+  # , line_color = c(
+  #   'red', 'black', 'black', 'red'
+  #   , 'black', 'black', 'black', 'black', 'black'
+  # )
+)
+
+time_data2 <- data.table(
+  dataset = as.factor(c(
+    'Dyadic MID', 'Alliance Formation', 'External Support', 'ICEWS Events'
+    , 'Trade Flow', 'IGO Overlap', 'Religious Distance', 'Polity Difference'
+    , 'Relative Capacity'
+  ))
+  , time_start = rep(1995, 9)
+  , time_end = rep (2001, 9)
+)
+
+
+sub_data <- data.table(
+  dataset = c(2, 4)
+  , time_start = c(1995, 1995)
+  , time_end = c(2001, 2001)
+  , line_color = 'red'
+)
+
+data_timeplot <- ggplot(time_data) +
+  geom_segment(
+    aes(
+      x = time_start, xend = time_end
+      , y = dataset, yend = dataset
+      )
+    # , colour = time_data$line_color
+    , size = 1.25
+    , color = 'grey60'
+    ) +
+  geom_segment(
+    aes(
+      x = time_start, xend = time_end
+      , y = dataset, yend = dataset
+    )
+    , colour = 'black'
+    , size = 2
+    , data = time_data2
+  ) +
+  geom_vline(
+    xintercept = c(1995, 2001)
+    , colour = 'grey80'
+  ) +
+  labs(x = 'Year', y = 'Data Source') +
+  theme_bw()
+
+data_timeplot
+```
+
+
+## Modeling approach
+
+To test these hypothesis, I rely on three different variants of logistic regression analysis. These data are essentially time-series-cross-sectional (TSCS) observations with discrete outcome variables (0/1 for MID onset and alliance formation, -1/0/+1 for civil conflict intervention). As such, two issues have to be dealt with. First, the temporal nature of these data means that endogeneity is a potential issue for inferring causal effects. For example, if a MID is observed in the same year that two states share a high number of low-cost conflictual interactions, it is not clear which preceded which -– the MID may be an escalation of low-cost conflict, or the onset of a MID may be followed by further acrimonious interactions such as claiming victory or placing blame for initiation. Second, TSCS data do not fulfill the assumption of independence –- the characteristics of a given dyad (i, j) are highly correlated over time.
+
+I deal with endogeneity in the crude but common fashion of lagging all independent variables by one year. This removes the possibility that a correlation between input and output variables is a result of the output 'causing' the input. It also raises the bar of difficulty for testing my hypotheses, in that it implicitly assumes that the relationships signaled by low-cost verbal interactions are stable over time --– in other words, that last year’s cooperation and conflict on minor issues captures an underlying relationship that affects the likelihood of cooperation and conflict on major issues this year.
+
+I also include yearly fixed effects to control for the effects of time. @Beck1998 [1283-1284] point out that including non-parametric temporal effects in the form of splines are an effective approach for TSCS data. Given the six-year temporal span of my data, however, splines and other  transformations are unlikely to be helpful. Instead, I include yearly fixed effects to allow the  probability of any given outcome to vary as a result of time[^5].
+
+[^5]: I recognize that at least for modeling MID onset, a hazard model is empirically and theoretically more appropriate [see @Box-Steffensmeir2004 for a detailed discussion]. I use logistic regression for two reasons. First, while hazard analysis is more appropriate for MIDs, it is more difficult to apply and interpret for outcomes subject to selection effects (alliances) or for interrupted or irregular observation windows (civil conflict interventions). To make it easier to compare model results, I use different variants of logistic regression for all three tests. Second, logistic regression with temporal controls generally produces results that are very similar to hazard analysis, reducing the worry that I am biasing or mis-modeling these processes. As a robustness check, however, I run a set of Cox proportional-hazard models on the MIDs data, and show the results -– which are identical in direction and significance –- in the Appendix.
+
+### Modeling approach: dyadic MID
+
+To model the likelihood of a MID in a given year as a function of low-intensity cooperation and conflict in the previous year, I employ logistic regression with fixed effects for time. 
+
+### Modeling approach: alliance formation
+
+Modeling alliance formation is a bit more complicated for two related reasons. First, alliances tend to be durable over time. This means that alliances are more akin to phase changes than the discrete/repeatable events we usually model with logistic regression. Second, the window of observation is small and historically recent. Taken together, this means that many of the state dyads most likely to form both trust-based relationships and alliances already have done so over the previous decades or centuries –-- which in turn means that they are unlikely to form new alliances during the window of analysis I have available.
+
+To deal with this issue, I treat the prior presence of an alliance as a selection effect. To model the likelihood of two states joining in an alliance, I have to first model the probability that they have *not* done so prior to entering the pool of data being analyzed --- in other words, identifying state dyads that could potentially form a new alliance, given that they have not done so already. I do this through a two-stage Heckman selection model [@Heckman1977]: the first (selection) stage estimates the likelihood that two states *do not* have an alliance prior to 1995, and the second (outcome) stage estimates the probability that two states will form a new alliance, given that they have not already. 
+
+The functional form of the first (selection) stage is a probit regression identifying state dyads that do not already have an alliance. Dyads with no alliance present are selected into the second stage of the model, which uses logistic regression to estimate the probability that they will form a new alliance.
+
+### Modeling approach: civil conflict intervention
+
+To model the likelihood of a given state *i* intervening in another state *j*’s ongoing civil conflict, I employ multinomial logistic regression. This allows me to estimate the probability of a given action by state *i* (support government or support insurgents) relative to the baseline outcome of doing nothing. For this analysis, I restrict the sample to only dyad-years in which state *j* is experiencing an ongoing civil conflict: this is because intervening in another state’s conflict is (obviously) impossible when that state is not experiencing a conflict to begin with. The resulting data set consists of 908 politically relevant dyad-years in which at least one state in a dyad is experiencing a civil conflict. 
+
+### Testing robustness: out-of-sample prediction
+
+Statistical analysis in political science comes under criticism for two reasons. First, coefficient estimates are often presented as 'important' simply because they meet some standard of statistical significance, usually $p < 0.05$, with little discussion of *substantive* significance: whether realistic changes in those variables would actually lead to significantly different predictions [@Head2015, 2]. Second, and often related, is the accusation that statistical models over-fit the data, producing estimates that are well-suited for explaining existing patterns but virtually useless for predicting or explaining new data [@Ward2007, 597].
+
+To deal with these issues, I engage in out-of-sample (OOS) testing in each set of models. OOS modeling trains a model on a subset of the data, holding a portion 'untouched' during the training process. Then, the trained model is used to make predictions on the untouched data, and these predictions are compared with the observed outcomes. This approach lets me gauge whether the estimates produced are robust to over-fitting and are potentially useful for future predictions. 
+
+If the variables I propose are empirically useful, then they will (1) show statistically significant correlations with the outcome of interest in the training stage of the model, and (2) improve the predictive power of the model when faced with new data. Each model is trained on a random subset of 70% of observations, with 30% held back for testing. 
+
+# Results and discussion
+
+## Results: dyadic MID onset
+
+Hypothesis 1 is strongly supported. I find that there is a statistically significant, positive relationship between low-cost verbal interactions between states and the onset of a MID. Table \@ref(tab:MidTable) shows the results of a set of logistic regression models. Model 1 provides a baseline, including a set of functionalist variables identified as important in the majority of IR literature. Model 2 introduces a set of structural controls identified in the Kantian peace literature. Model 3 introduces the event-based measure of net verbal cooperation.
+
+
+```{r MidTable, echo = F, fig.cap = 'Results: dyadic MID onset with confidence intervals.', results = 'asis', message = F, warning = T}
+###############################################################################
+## Additional columns: training/testing fit statistics
+################################################################################
+
+########## Calculate model fit on TRAINING data
+
+## Model 1 (baseline)
+pred_mid_m1 <- data.frame(
+  lag_midstart = mid_train_relevant$lag_midstart
+  , pred = predict(mid_logit_1, newdata = mid_train_relevant, type = 'response')
+)
+
+## Model 2 (no weight)
+pred_mid_m2 <- data.frame(
+  lag_midstart = mid_train_relevant$lag_midstart
+  , pred = predict(mid_logit_2, newdata = mid_train_relevant, type = 'response')
+)
+
+## Model 3.0 (positive weight)
+pred_mid_m30 <- data.frame(
+  lag_midstart = mid_train_relevant$lag_midstart
+  , pred = predict(mid_logit_30, newdata = mid_train_relevant, type = 'response')
+)
+
+## Calculate AUC
+mid1_auc_in <- round(auc(pred_mid_m1$lag_midstart, pred_mid_m1$pred), digits = 2)
+mid2_auc_in <- round(auc(pred_mid_m2$lag_midstart, pred_mid_m2$pred), digits = 2)
+mid3_auc_in <- round(auc(pred_mid_m30$lag_midstart, pred_mid_m30$pred), digits = 2)
+
+
+########## Calculate model fit on TESTING data
+
+## Model 1 (baseline)
+pred_mid_m1 <- data.frame(
+  lag_midstart = mid_test_relevant$lag_midstart
+  , pred = predict(mid_logit_1, newdata = mid_test_relevant, type = 'response')
+)
+
+## Model 2 (no weight)
+pred_mid_m2 <- data.frame(
+  lag_midstart = mid_test_relevant$lag_midstart
+  , pred = predict(mid_logit_2, newdata = mid_test_relevant, type = 'response')
+)
+
+## Model 3.0 (positive weight)
+pred_mid_m30 <- data.frame(
+  lag_midstart = mid_test_relevant$lag_midstart
+  , pred = predict(mid_logit_30, newdata = mid_test_relevant, type = 'response')
+)
+
+## Calculate AUC
+mid1_auc_out <- round(auc(pred_mid_m1$lag_midstart, pred_mid_m1$pred), digits = 2)
+mid2_auc_out <- round(auc(pred_mid_m2$lag_midstart, pred_mid_m2$pred), digits = 2)
+mid3_auc_out <- round(auc(pred_mid_m30$lag_midstart, pred_mid_m30$pred), digits = 2)
+
+## Transform coefficients and standard errors for output
+coef_exp <- list(
+  exp(mid_logit_1$coef)
+  , exp(mid_logit_2$coef)
+  , exp(mid_logit_30$coef)
+)
+
+se_exp <- list(
+  exp(mid_logit_1$coef) * exp(summary(mid_logit_1)$coeff[, 2])
+  , exp(mid_logit_2$coef) * exp(summary(mid_logit_2)$coeff[, 2])
+  , exp(mid_logit_30$coef) * exp(summary(mid_logit_30)$coeff[, 2])
+)
+
+stargazer(
+  mid_logit_1, mid_logit_2, mid_logit_30
+  # , apply.coef = exp
+  # , ci = T
+  , digits = 2
+  , omit = c('year1996', 'year1997', 'year1998', 'year1999', 'year2000')
+  , covariate.labels = c(
+    'Net cooperation', 'Alliance', 'Logged trade', 'IGO overlap'
+    , 'Religious dist.', 'Joint democracy', 'Relative capacity'
+    , 'Previous MIDs'
+    )
+  , dep.var.labels = 'Dyadic MID onset'
+  , notes = 'Yearly fixed effects not shown.'
+  , notes.append = T
+  , add.lines = list(c('', '1', '2', '3'))
+  # , add.lines = list(
+  #   c('AUC (in-sample)', mid1_auc_in, mid2_auc_in, mid3_auc_in)
+  #   , c('AUC (out-sample)', mid1_auc_out, mid2_auc_out, mid3_auc_out)
+  #   )
+  , title = '\\label{tab:MidTable}Results: dyadic MID onset.'
+  , table.layout = '=ldma-t-s=n'
+  , header = F
+  )
+```
+
+
+```{r Test, fig.cap = 'test', include = F}
+mid_pp <- Zelig::zelig(
+  lag_midstart
+  ~ mean_weight_net
+  + alliance_present
+  + trade_flow
+  + igo_overlap
+  + relig_distance
+  + joindem
+  # + polity_diff
+  # + joindem:polity_diff
+  + relcap
+  + sum_mids
+  + year
+  , data = mid_train_relevant
+  , model = 'logit'
+)
+
+# x.high <- Zelig::setx(mid_pp, mean_weight_net = quantile(mid_train_relevant$mean_weight_net, prob = 0.75))
+# x.low <- Zelig::setx(mid_pp, mean_weight_net = quantile(mid_train_relevant$mean_weight_net, prob = 0.25))
+# s.out2 <- Zelig::sim(mid_pp, x = x.high, x1 = x.low)
+# summary(s.out2)
+```
+
+
+```{r PlotROC, fig.cap = 'ROC plot, MID onset', echo = F, include = F}
+## CURRENTLY NOT SHOWN
+plot(
+  roc(
+    pred_mid_m2$lag_midstart
+    , pred_mid_m2$pred
+    , direction = '<'
+    
+    )
+  # , ltype=  2
+  , col = 'grey80'
+  )
+plot(
+  roc(
+    pred_mid_m30$lag_midstart
+    , pred_mid_m30$pred
+    , direction = '<'
+    )
+    , add = T
+  )
+
+
+```
+
+Model 3 shows that increased levels of verbal cooperation in a given year are associated with a lower chance of MID onset in the following year. This effect is both substantively and statistically significant. Calculating predicted probabilities quantifies this effect more directly: moving from the 5% quantile to the 95% quantile along the net-cooperation variable, holding all other factors constant, decreases the likelihood of MID onset by about 33% (0.03 to 0.02) in a given year. While a difference of 1% is not very large, consider that (1) MIDs are extremely rare events even between politically relevant dyads, and (2) the effects of verbal cooperation are both substantively and statistically more significant than those of dyadic trade, IGO membership, and religious distance. This is a strong indication that the measure of net verbal cooperation I create is capturing real variation.
+
+It is worth noting that, at least for the sample analyzed here, few of the control variables suggested by the literature attain statistical significance after measures of low-cost verbal interaction are included. The presence of an alliance, levels of dyadic trade, overlapping IGO membership, and religious similarity all show inconclusive relationships with MID onset. Joint democracy, relative capacity, and the presence of previous militarized disputes all remain significant, and in the directions expected by the literature: dyads that share democratic institutions are less likely to experience a MID, while those that have a history of conflict or have similar material capability are more likely to experience a MID.
+
+For the training data, I find that net cooperation plays an important role in predicting MID onset. However, it is also important to assess whether this measure still improves explanatory power when faced with new data. To do so, I use Models 1 through 3 to predict MID onset using the 30% of observations held back from the training step. Testing model fit on these untouched data shows that, for both in-sample and out-of-sample data, including measures of low-cost verbal cooperation and conflict increases model fit when predicting MID onset[^6]. To compare how well each model did in predicting the outcome of interest on the testing data, I measure the area under the ROC curve (AUC), a commonly used measure of model fit that assesses how well a model balances between true-positive and false-positive predictions [@Hanley1982]. Values closer to 1 indicate better model fit, while values closer to 0.5 signal a model on par with random guessing. Model 2, which omits low-intensity interactions, scores 0.82 on in-sample and 0.77 on out-of-sample prediction. The fully specified Model 6 improves on this significantly, scoring 0.86 on in-sample and 0.81 on out-of-sample prediction. Not only does the fully-specified model fit the training data better, but it significantly improves predictive accuracy when used on new data. This provides strong support for the validity of using these data to predict militarized interstate disputes.
+
+[^6]: More recent work suggests that the effects of both alliances and trade ties may be more complex than this dyadic research design might suggest [e.g. @Oneal2003; @Maoz2007]. Future work could expand on this dyadic approach, embedding states in networks of interaction that may pick up on indirect dependencies.
+
+## Results: alliance formation
+
+Hypothesis 2, on the other hand, finds little support. The Heckman selection models presented in Tables \@ref(tab:AllyTableSelect) and \@ref(tab:AllyTableOutcome) predict as a first stage whether two states did *not* share an alliance in 1995, the first year in the data pool. The second stage of the model predicts whether two states, given that they did not share an alliance previously, form a new alliance in a given year. In this second stage, net verbal cooperation has no significant effect on alliance formation.
+
+\newpage
+```{r AllyTableSelect, echo = F, fig.cap = 'Results: Alliance formation.', results = 'asis'}
+stargazer(
+  ally_1, ally_2, ally_30
+  , digits = 2
+  , selection.equation = T
+  # , omit = c('year1996', 'year1997', 'year1998', 'year1999', 'year2000')
+  , covariate.labels = c(
+    'Logged trade', 'IGO overlap', 'Religious dist.', 'Joint democracy', 'Relative capacity'
+  )
+  , model.numbers = F
+  , dep.var.labels = 'Absence of alliance'
+  , notes = 'Yearly fixed effects not shown.'
+  , notes.append = T
+  , title = '\\label{tab:AllyTableSelect}Selection stage: absence of alliance.'
+  , add.lines = list(c('', '3', '4', '5'))
+  , header = F
+  )
+```
+
+\newpage
+```{r AllyTableOutcome, echo = F, fig.cap = 'Results: Alliance formation.', results = 'asis'}
+stargazer(
+  ally_1, ally_2, ally_30
+  , digits = 2
+  , omit = c('year1996', 'year1997', 'year1998', 'year1999', 'year2000')
+  , covariate.labels = c(
+    'Net cooperation', 'Previous MIDs', 'IGO overlap', 'Religious dist.', 'Joint democracy'
+    , 'Logged trade', 'Relative capacity'
+  )
+  , dep.var.labels = 'Alliance formation'
+  , notes = 'Yearly fixed effects not shown.'
+  , notes.append = T
+  # , add.lines = list(
+  #   c('AUC (in-sample)', ally1_auc_in, ally2_auc_in, ally3_auc_in)
+  #   , c('AUC (out-sample)', ally1_auc_out, ally2_auc_out, ally3_auc_out)
+  #   )
+  , title = '\\label{tab:AllyTableOutcome}Outcome stage: alliance formation.'
+  , add.lines = list(c('', '3', '4', '5'))
+  , table.layout = '=ldma-t-s=n'
+  , header = F
+  )
+```
+
+
+In the selection stage, IGO overlap, trade flows, and religious proximity have the expected effects: states that share membership in more IGOs, trade more, and have similar religious populations are more likely to share an alliance when they enter the sample pool. Oddly, joint democracy has the opposite effect: the coefficient on joint democracy is significant and positive, indicating that democratic dyads were actually slightly *less* likely to share an alliance entering the sample pool.
+
+In the outcome stage, only IGO overlap and trade flows reach conventional levels of significance, and both show very small substantive effects. Dyads that share membership in more IGOs and have more similar religious populations are slightly more likely to form alliances, given that they had not already done so by 1995. These effects are again in the expected direction. Joint democracy has a small positive effect, but this is significant only at the $p < 0.10$ level. Net verbal cooperation has little appreciable effect on the likelihood of two states forming an alliance: the coefficent sign is negative (the opposite of the expected direction), fails to reach the $p < 0.05$ threshold of significance, and is substantively extremely small.
+
+Unsurprisingly given these issues, including net verbal cooperation does not appreciably increase out-of-sample predictive capability. Compared to the structural Model 5, the fully specified Model 6 shows no increase in model fit as measured in AUC score: both models score 0.84 on in-sample data and 0.71 on out-of-sample data. This provides further evidence that, at least in this modeling approach, net verbal cooperation has little effect on the likelihood of alliance formation. The lack of support for Hypothesis 2 may be a function of the limited data available. The number of politically relevant dyads that formed alliances in this period is very small (n = 44, or about 0.8% of cases), making it difficult to form robust predictions. Additionally, the selection modeling approach may not be enough to properly account for the fact that most 'friendly' state dyads already had alliances during this time period. With more temporal coverage, it would be possible to engage in a more intensive test of this hypothesis.
+
+
+```{r TTest, include = F}
+## t-test analyzing cooperation within long-term alliances vs outside
+ally_ttest_data <- rbind(ally_train_relevant, ally_test_relevant)
+ally_ttest <- t.test(
+  ally_ttest_data[constant_alliance == 1, mean_weight_pos]
+  , ally_ttest_data[constant_alliance == 0, mean_weight_pos]
+)
+
+```
+
+Despite the failure to support Hypothesis 2, a simple $t$-test provides some support for the idea that verbal cooperation and alliances generally go together. States that are allied share significantly higher levels of low-intensity cooperation (mean = 1.12) compared to states that do not share an alliance (mean = 0.73), an increase difference of over 50%. This does not speak to the causal effects of alliance and low-intensity cooperation, but it does suggest that the two forms of cooperation co-vary with one another. Further data gathering and analysis may shed more light on the details of this relationship.
+
+## Results: civil conflict intervention
+
+I find strong support for Hypotheses 3a and 3b, as shown in Table \@ref(tab:InterTable).
+
+\newpage
+\begin{landscape}
+```{r InterTable, echo = F, fig.cap = 'Results: civil conflict intervention.', results = 'asis'}
+stargazer(
+  inter_1, inter_2, inter_30
+  , digits = 2
+  , omit = c('year1996', 'year1997', 'year1998', 'year1999', 'year2000')
+  , covariate.labels = c(
+    'Net cooperation', 'Alliance', 'Logged trade', 'IGO overlap'
+    , 'Religious dist.', 'Joint democracy', 'Relative capacity'
+    , 'Previous MIDs'
+    )
+  , dep.var.labels = 'Conflict intervention (+1 = state, -1 = rebels)'
+  , notes = 'Yearly fixed effects not shown.'
+  , notes.append = T
+  , title = '\\label{tab:InterTable}Model results: civil conflict intervention.'
+  , add.lines = list(c('', '6', '6', '7', '7', '8', '8'))
+  , table.layout = '=ldma-t-s=n'
+  , header = F
+  )
+
+```
+\end{landscape}
+
+When a state experiences a civil conflict, the propensity of other states to act, and the form this action takes, is affected significantly by the nature of the relationship between the conflict state and the (potential) intervenor. States that share a cooperative relationship are, compared to the baseline of 'doing nothing', less likely to provide support to insurgents in an ongoing conflict, and more likely to intervene to support the government of the conflict state. Verbal signals of friendship and enmity seem to be backed up consistently by more costly actions of support or opposition, given the opportunity. 
+
+The majority of control variables find support here as well, and in the directions I would anticipate, with a few interesting exceptions. First, joint democracies tend to stay out of each others' business: democracies virtually never intervene to support insurgents, but are not necessarily more likely to support one another directly during civil conflict. Second, states with more similar religious populations are more likely to support insurgents in one another's civil conflicts. This may be due to irredentist conflicts: groups that are similar in population across two states, but discriminated against in one, may agitate for intervention to support their fellows during a religious civil conflict. Finally, state dyads that share a history of militarized conflict are more likely to intervene on either the side of the insurgent or the government.
+
+Having found statistical evidence that verbal interaction indicates the likelihood and form of conflict intervention, I use the same in-sample/out-of-sample approach to test whether the inclusion of this new variable actually improves predictive capability. Since AUC statistics do not translate readily to multi-outcome models, I instead present confusion matrices for the structural Model 7 and the fully-specified Model 8 in Tables \@ref(tab:ConfMatStruct) and \@ref(tab:ConfMatFull). These matrices show the predicted veresus observed outcomes from each model. Higher values on the diagonal indicate better model fit, as more observed values are accurately predicted.
+
+Including measures of low-cost verbal cooperation and conflict improves model fit on the in-sample data as well as predictive accuracy on the out-of-sample data. These measures improve accuracy mostly by increasing the model's ability to correctly identify non-intervention cases while still accurately classifying cooperative and conflictual intervention, reducing the number of false-positive predictions where no actual intervention occurs. The structural model predicts civil conflict interventions with 39% accuracy, while the fully specified model increases predictive accuracy to 45%. This increases my confidence that including verbal interactions in models of conflict and cooperation has real effects in improving our predictive capability.
+
+```{r ConfMatCalc, include = F}
+
+##### Generate confusion matrices
+caret:: confusionMatrix(table(pred_inter_m2$lag_supportstate, pred_inter_m2$pred, dnn = c('Observed', 'Predicted')))
+caret:: confusionMatrix(table(pred_inter_m30$lag_supportstate, pred_inter_m30$pred, dnn = c('Observed', 'Predicted')))
+
+```
+
+\newpage
+\begin{centering}
+\captionof{table}{Confusion matrix, structural model.}
+\begin{tabularx}{\textwidth}{c|c c c |}
+\label{tab:ConfMatStruct}
+ & No action & Support ins. & Support state \\
+\hhline{----}
+No action & 65 \cellcolor[gray]{.8} & 84 & 54  \\
+Support ins. & 0 & 16 \cellcolor[gray]{.8} & 0  \\
+Support state & 2 & 2 & 9 \cellcolor[gray]{.8} \\
+\hhline{~---}
+\end{tabularx}
+
+
+\captionof{table}{Confusion matrix, full model.}
+\begin{tabularx}{\textwidth}{c|c c c |}
+\label{tab:ConfMatFull}
+ & No action & Support ins. & Support state \\
+\hhline{----}
+No action & 80 \cellcolor[gray]{.8} & 74 & 49  \\
+Support ins. & 0 & 15 \cellcolor[gray]{.8} & 1  \\
+Support state & 2 & 2 & 9 \cellcolor[gray]{.8} \\
+\hhline{~---}
+\end{tabularx}
+
+\end{centering}
+
+# Conclusions
+
+Cheap talk -- at least in routine day-to-day interactions -- is a useful predictor of costly action. Fundamentally, much of what we do as scholars of international relations boils down to identifying and explaining 'friendship' and 'enmity' between states. Events data provide an interesting way to gauge these relationships and model how they evolve over time. Repeated low-cost acts of verbal cooperation or conflict over time can stabilize interstate relationships, normalizing trust or distrust between a pair of states. I find that the tone of offers, accusations, promises, and so on between a pair of states is a useful proxy for the underlying level of trust or distrust in that relationship. While my current findings are much stronger for military matters -- MIDs and external support for civil war -- I suspect that the weakness of my results in explaining alliance formation is largely a function of low data availability. For MIDs and conflict intervention, my findings are robust to (1) a set of well-established control variables; (2) subsetting the input data by politically relevant dyads, as well as the global sample; and (3) predicting outcomes on held-back testing data. Overall, my findings suggest two things. 
+
+First, these findings support constructivist theory that treats interaction and identity as mutually constitutive: states that cooperate in minor day-to-day interactions build positive mutual identities over time. These underlying cooperative or acrimonious relationships affect the likelihood of high-cost material forms of conflict and cooperation. The type and tone of verbal interactions do not have a direct constraining effect on state behavior in the short run, but rather (1) signal some underlying level of trust or distrust between states, and (2) assist in the construction of identities and norms over longer time periods, strengthening these underlying relationships. These results provide evidence that integrating short-term events data with longer-term structural characteristics of states can strengthen our understanding of how interstate relationships evolve over time. 
+
+Second, these findings open up a range of interesting future research questions, particularly in examining the endogenous effects of formal institutions. The analysis I show here does not try to explain the *reasons* that some interstate relationships evolve towards friendship over decades or centuries, while others evolve towards enmity. This is largely a limitation of data availability: with a six-year window of analysis, it is difficult to make claims about how long-term path dependency emerges over time. However, this is an interesting question with major implications about the long-term role of structure versus agency in determining patterns of interstate cooperation and conflict. With more data, it would be possible -- particularly for newer states -- to gauge how their *de facto* foreign policy evolves in conjunction with their membership in formal institutions, their trade ties with other states, their security relationships, and so on. Event data can help paint a much more complete picture of how states interact with one another.
+
+Do formal institutions create opportunities for low-intensity cooperation, or do states that already cooperate form institutions with one another? Being able to measure the `ground state’ of day-to-day, low-cost interactions between states may provide useful leverage in analyzing what the causal effects of formal ties such as institutions, trade, and alliances are in promoting shared ideals, identities, and friendships between states. It makes sense that there is a mutually reinforcing cycle in which the existence of structural similarities and institutional bonds can cause, and be caused by, underlying levels of friendship and enmity between states. This indicates a need for further study of the available data, as well as increased data-collection efforts in the future. 
+
+# Appendix
+
+## Variable correlation matrix
+
+```{r CorrMatrix, echo = F, fig.cap = 'Correlation matrix.'}
+knitr::kable(round(corr_data, 2))
+```
+
+## Robustness check: logit models, all dyad-years
+
+```{r AppendixAnalysis, cache=F, include=FALSE}
+###############################################################################
+##
+## MainAnalysis.R
+## 
+## Purpose: Run a set of models on the finalized data.
+##
+## Depends on: MergeAnalysisData.R
+##
+## Function: Loads finished data, does some on-the-fly processing,
+##  and runs a set of predictive models.
+##
+## Output: .Rdata objects containing models.
+##
+## Output files: 
+##  - TBA
+##
+###############################################################################
+
+## Set working directory
+
+setwd('/Users/localadmin/Dropbox/Research/CheapTalk')
+# setwd('/Users/localadmin/Dropbox/Research/CheapTalk')
+
+###############################################################################
+##
+## Load in data on political relevance for subsetting data
+##
+###############################################################################
+
+## Political relevance (1995 - 2001)
+## Object: yearly_relevance (UNDIRECTED)
+load('./Data/AnalysisData/yearly_relevance.Rdata')
+
+
+###############################################################################
+##
+## Load in data for analysis
+##
+###############################################################################
+
+load('./Data/AppendixData/yearly_data.Rdata')
+
+
+###############################################################################
+##
+## Generate some on-the-fly variables
+##
+###############################################################################
+
+## One-year lead for MID occurrence (DV)
+yearly_data[, lag_midstart := shift(mid_start, 1, type = 'lead'), by = c('statea', 'stateb')]
+yearly_data[is.na(lag_midstart) & year == 2000, lag_midstart := 0]
+
+## One-year lead for alliance formation (DV)
+yearly_data[, lag_allianceformation := shift(alliance_formed, 1, type = 'lead'), by = c('statea', 'stateb')]
+
+## One-year lead for civil war intervention (DV)
+yearly_data[, lag_civilconflict := shift(civil_conflict, 1, type = 'lead'), by = c('statea', 'stateb')]
+yearly_data[, lag_supportstate := shift(support_state, 1, type = 'lead'), by = c('statea', 'stateb')]
+
+
+## Cumulative sum of events (for stratification)
+yearly_data[, sum_mids := NA_real_]
+yearly_data[, sum_mids := cumsum(mid_start), by = c('statea', 'stateb')]
+yearly_data[, sum_mids := shift(sum_mids, 1, type = 'lag'), by = c('statea', 'stateb')]
+yearly_data[is.na(sum_mids), sum_mids := 0]
+
+## Generate B -> A ICEWS weight
+temp_data <- yearly_data[, list(year, statea, stateb, weight_pos, weight_neg)]
+setnames(temp_data, c('year', 'stateb', 'statea', 'weight_pos_ba', 'weight_neg_ba'))
+yearly_data <- merge(yearly_data, temp_data, by = c('year', 'statea', 'stateb'))
+
+## Calculate undirected ICEWS weight variables
+yearly_data[, mean_weight_pos := rowMeans(as.matrix(yearly_data[, list(weight_pos, weight_pos_ba)]))]
+yearly_data[, mean_weight_neg := abs(rowMeans(as.matrix(yearly_data[, list(weight_neg, weight_neg_ba)])))]
+yearly_data[, mean_weight_net := mean_weight_pos - mean_weight_neg]
+# yearly_data[, min_weight := pmin(weight, weight_ba, na.rm = T)]
+# yearly_data[, max_weight := pmax(weight, weight_ba, na.rm = T)]
+
+## Dyad ID variable
+yearly_data[, dyad_id := paste(statea, stateb, sep = '_')]
+
+## Re-sort and remove duplicates
+setkeyv(yearly_data, c('year', 'statea', 'stateb'))
+yearly_data <- subset(unique(yearly_data))
+
+
+## Temp hack for trade data and MIDs in 2001
+yearly_data[is.nan(trade_flow), trade_flow := 0]
+yearly_data[is.na(trade_flow), trade_flow := 0]
+
+yearly_data[is.na(mid_start) & year == 2000, mid_start := 0]
+yearly_data[is.na(mid_start) & year == 2001, mid_start := 0]
+yearly_data[is.na(mid_start) & year == 2002, mid_start := 0]
+
+###############################################################################
+##
+## Transform the data to generate TWO undirected-dyad data sets:
+##  1. Politically relevant dyads ONLY
+##  2. All dyads
+##
+###############################################################################
+
+## Data set 1: Merge in data on political relevance. 
+##  This will both subset the number of states/dyads,
+##  AND change from A->B/B->A to A--B undirected dyad format.
+
+# yearly_data_relevant <- merge(
+#   yearly_data
+#   , yearly_relevance
+#   , by = c('year', 'statea', 'stateb')
+# )
+
+
+## Data set 2: Subset data from directed-dyad to undirected-dyad format
+yearly_data_relevant <- yearly_data[
+  as.integer(as.factor(statea)) >
+    as.integer(as.factor(stateb))
+  ]
+yearly_data_relevant <- yearly_data_relevant[year <= 2001]
+
+##### Pre-processing function to generate training/test sets
+prep_data <- function(input_data, out_var = 'mid', out_year = 2000){
+  ## Subset by year <= 2001
+  analysis_data <- input_data[year <= out_year]
+  
+  ## Keep only complete cases
+  analysis_data <- analysis_data[
+    complete.cases(
+      analysis_data[
+        , 
+        list(lag_midstart, mean_weight_pos, mean_weight_neg
+             , alliance_present, trade_flow
+             , igo_overlap, relig_distance, joindem
+             , relcap, polity_diff)
+        ]
+    )
+    ]
+  
+  ## Time variable starting with 1
+  analysis_data[, time := year - 1994]
+  
+  ## Convert year to factor for modeling
+  analysis_data[, year := as.factor(year)]
+
+  ##### Process according to desired task
+  if (out_var == 'mid'){
+    
+    ## 0 - left-censored
+    analysis_data[, status := 0]
+    ## 1- Event at time t
+    analysis_data[lag_midstart == 1, status := 1]
+    ## 2 - right-censored
+    # analysis_data[year == 2001 & lag_midstart == 0, status := 2]
+    
+    ## Subset into training/testing data
+    train_rows <- createDataPartition(analysis_data$lag_midstart, times = 1, p = 0.7)
+    train_rows <- train_rows$Resample1
+    train_data <- analysis_data[train_rows]
+    test_data <- analysis_data[-train_rows]
+    
+    
+  } else if (out_var == 'alliance'){
+    ## 0 - left-censored
+    analysis_data[, status := 0]
+    ## 1- Event at time t
+    analysis_data[lag_allianceformation == 1, status := 1]
+    ## 2 - right-censored
+    # analysis_data[year == 2001 & lag_midstart == 0, status := 2]
+    
+    analysis_data[, sum_ally_years := sum(alliance_present), by = c('statea', 'stateb')]
+    analysis_data[, constant_alliance := 0L]
+    analysis_data[sum_ally_years == 6, constant_alliance := 1L]
+    # analysis_data <- analysis_data[sum_ally_years < 6]
+    
+    ## Subset into training/testing data
+    train_rows <- createDataPartition(analysis_data$lag_allianceformation, times = 1, p = 0.7)
+    train_rows <- train_rows$Resample1
+    train_data <- analysis_data[train_rows]
+    test_data <- analysis_data[-train_rows]
+    
+    
+  } else if (out_var == 'intervention'){
+    
+    analysis_data[is.na(analysis_data$lag_supportstate), lag_supportstate := 0]
+    analysis_data[, lag_supportstate := factor(lag_supportstate)]
+    analysis_data[, lag_supportstate := relevel(lag_supportstate, '0')]
+    
+    analysis_data <- analysis_data[lag_civilconflict == 1]
+    
+    ## Subset into training/testing data
+    train_rows <- createDataPartition(analysis_data$lag_supportstate, times = 1, p = 0.7)
+    train_rows <- train_rows$Resample1
+    train_data <- analysis_data[train_rows]
+    test_data <- analysis_data[-train_rows]
+    
+    
+  }
+
+  ## Return data as list
+  return(list(train_data, test_data))
+}
+
+
+
+
+
+###############################################################################
+##
+## Model set 1
+##  DV: MID onset
+##  Data: Relevant dyads
+##
+##  Modeling approach: logistic regression
+##
+###############################################################################
+
+##### Generate training and testing data
+set.seed(8002)
+cleaned_data_relevant <- prep_data(yearly_data_relevant)
+mid_train_relevant <- cleaned_data_relevant[[1]]
+mid_test_relevant <- cleaned_data_relevant[[2]]
+
+## Model 1: Functional variables 
+##  (trade, capacity, alliance)
+mid_logit_1 <- glm(
+  lag_midstart
+  ~ alliance_present
+  + log(trade_flow + 1)
+  + relcap
+  + sum_mids
+  + year
+  , data = mid_train_relevant
+  , family = binomial(link = 'logit')
+)
+
+
+## Model 2: Adding normative/structural variables 
+##  (joint democracy, religious distance, IGOs)
+mid_logit_2 <-  glm(
+  lag_midstart
+  ~ alliance_present
+  + log(trade_flow + 1)
+  + igo_overlap
+  + relig_distance
+  + joindem
+  # + polity_diff
+  # + joindem:polity_diff
+  + relcap
+  + sum_mids
+  + year
+  , data = mid_train_relevant
+  , family = binomial(link = 'logit')
+  )
+
+
+## Model 3.0: Adding low-salience trust variable
+mid_logit_30 <- glm(
+  lag_midstart
+  ~ mean_weight_net
+  + alliance_present
+  + log(trade_flow + 1)
+  + igo_overlap
+  + relig_distance
+  + joindem
+  # + polity_diff
+  # + joindem:polity_diff
+  + relcap
+  + sum_mids
+  + year
+  , data = mid_train_relevant
+  , family = binomial(link = 'logit')
+)
+
+summary(mid_logit_30)
+
+
+
+###############################################################################
+##
+## Model set 2
+##  DV: Alliance formation
+##  Data: Relevant dyads
+##
+## Modeling approach: Heckman selection model
+##  First stage: alliance present/absent
+##  Second stage: alliance formation
+##
+###############################################################################
+
+##### Generate training and testing data
+# set.seed(8002365)
+cleaned_data_relevant <- prep_data(yearly_data_relevant, 'alliance')
+ally_train_relevant <- cleaned_data_relevant[[1]]
+ally_test_relevant <- cleaned_data_relevant[[2]]
+
+## Model 1: functional variables only
+ally_1 <- selection(
+  constant_alliance == 0
+  ~ log(trade_flow + 1)
+  + relcap
+  , lag_allianceformation
+  ~ sum_mids
+  + log(trade_flow + 1)
+  + relcap
+  + year
+  , data = ally_train_relevant
+)
+summary(ally_1)
+
+## Model 2: add constructivist structural variables
+ally_2 <- selection(
+  constant_alliance == 0
+  ~ log(trade_flow + 1)
+  + igo_overlap
+  + relig_distance
+  + joindem
+  + relcap
+  , lag_allianceformation
+  ~ sum_mids
+  + igo_overlap
+  + relig_distance
+  + joindem
+  + log(trade_flow + 1)
+  + relcap
+  + year
+  , data = ally_train_relevant
+)
+summary(ally_2)
+
+## Model 3.0: positive weight in final stage
+ally_30 <- selection(
+  constant_alliance == 0
+  ~ log(trade_flow + 1)
+  + igo_overlap
+  + relig_distance
+  + joindem
+  + relcap
+  , lag_allianceformation
+  ~ mean_weight_net
+  + sum_mids
+  + igo_overlap
+  + relig_distance
+  + joindem
+  + log(trade_flow + 1)
+  + relcap
+  + year
+  , data = ally_train_relevant
+)
+
+
+summary(ally_1)
+summary(ally_2)
+summary(ally_30)
+
+
+###############################################################################
+##
+## Model set 3
+##  DV: Choice to intervene and whether to intervene positive/negative
+##
+##  Modeling approach: Multinomial model
+##    Baseline: 0 (do nothing)
+##    Level 1: -1 (intervene to help rebels)
+##    Level 2: +1 (intervene to help state)
+##
+##
+###############################################################################
+
+##### Generate training and testing data
+# set.seed(800085)
+cleaned_data_relevant <- prep_data(yearly_data_relevant, 'intervention')
+inter_train_relevant <- cleaned_data_relevant[[1]]
+inter_test_relevant <- cleaned_data_relevant[[2]]
+
+## Model 1: Functional variables 
+##  (trade, capacity, alliance)
+inter_1 <- multinom(
+  lag_supportstate
+  ~ alliance_present
+  + log(trade_flow + 1)
+  + relcap
+  + sum_mids
+  + year
+  , data = inter_train_relevant
+)
+
+
+## Model 2: Adding normative/structural variables 
+##  (joint democracy, religious distance, IGOs)
+inter_2 <-  multinom(
+  lag_supportstate
+  ~ alliance_present
+  + log(trade_flow + 1)
+  + igo_overlap
+  + relig_distance
+  + joindem
+  + relcap
+  + sum_mids
+  + year
+  , data = inter_train_relevant
+  , weights = ifelse(inter_train_relevant$lag_supportstate == '0', 1, 25)
+)
+
+
+## Model 3.0: Adding low-salience trust variable
+##  (mean POSITIVE weight)
+inter_30 <- multinom(
+  lag_supportstate
+  ~ mean_weight_net
+  + alliance_present
+  + log(trade_flow + 1)
+  + igo_overlap
+  + relig_distance
+  + joindem
+  + relcap
+  + sum_mids
+  + year
+  , data = inter_train_relevant
+  , weights = ifelse(inter_train_relevant$lag_supportstate == '0', 1, 25)
+)
+
+summary(inter_1)
+summary(inter_2)
+summary(inter_30)
+
+
+## Model 2: no weight
+pred_inter_m2 <- data.frame(
+  lag_supportstate = inter_test_relevant$lag_supportstate
+  , pred = predict(inter_2, newdata = inter_test_relevant)
+)
+
+## Model 3.0: positive weight
+pred_inter_m30 <- data.frame(
+  lag_supportstate = inter_test_relevant$lag_supportstate
+  , pred = predict(inter_30, newdata = inter_test_relevant)
+)
+
+##### Generate confusion matrices
+confusionMatrix(table(pred_inter_m2$lag_supportstate, pred_inter_m2$pred, dnn = c('Observed', 'Predicted')))
+confusionMatrix(table(pred_inter_m30$lag_supportstate, pred_inter_m30$pred, dnn = c('Observed', 'Predicted')))
+
+```
+
+Presented below are a set of models identical to those in the main manuscript, but employing all dyad-years instead of only those specified as 'politically relevant'. In all cases, the sign and statistical significance of the key verbal-cooperation variable is identical to the models presented previously.
+
+### MID onset
+
+```{r MidTableAppendix, echo = F, fig.cap = 'Results: dyadic MID onset with confidence intervals.', results = 'asis', message = F, warning = T}
+stargazer(
+  mid_logit_1, mid_logit_2, mid_logit_30
+  # , apply.coef = exp
+  # , ci = T
+  , digits = 2
+  , omit = c('year1996', 'year1997', 'year1998', 'year1999', 'year2000')
+  , covariate.labels = c(
+    'Net cooperation', 'Alliance', 'Logged trade', 'IGO overlap'
+    , 'Religious dist.', 'Joint democracy', 'Relative capacity'
+    , 'Previous MIDs'
+    )
+  , dep.var.labels = 'Dyadic MID onset'
+  , notes = 'Yearly fixed effects not shown.'
+  , notes.append = T
+  , add.lines = list(c('', '1', '2', '3'))
+  # , add.lines = list(
+  #   c('AUC (in-sample)', mid1_auc_in, mid2_auc_in, mid3_auc_in)
+  #   , c('AUC (out-sample)', mid1_auc_out, mid2_auc_out, mid3_auc_out)
+  #   )
+  , title = '\\label{tab:MidTable}Dyadic MID onset, all dyads.'
+  , table.layout = '=ldma-t-s=n'
+  , header = F
+  )
+```
+
+\newpage
+
+```{r AllyTableSelectAllDyads, echo = F, fig.cap = 'Results: Alliance formation.', results = 'asis'}
+
+stargazer(
+  ally_1, ally_2, ally_30
+  , digits = 2
+  , selection.equation = T
+  # , omit = c('year1996', 'year1997', 'year1998', 'year1999', 'year2000')
+  , covariate.labels = c(
+    'Logged trade', 'IGO overlap', 'Religious dist.', 'Joint democracy', 'Relative capacity'
+  )
+  , model.numbers = F
+  , dep.var.labels = 'Absence of alliance'
+  , notes = 'Yearly fixed effects not shown.'
+  , notes.append = T
+  , title = '\\label{tab:AllySelectionAllDyads}Selection stage: absence of alliance, all dyads.'
+  , header = F
+  )
+```
+
+
+```{r AllyTableAllDyads, echo = F, fig.cap = 'Results: Alliance formation.', results = 'asis'}
+stargazer(
+  ally_1, ally_2, ally_30
+  , digits = 2
+  , omit = c('year1996', 'year1997', 'year1998', 'year1999', 'year2000')
+  , covariate.labels = c(
+    'Net cooperation', 'Previous MIDs', 'IGO overlap', 'Religious dist.', 'Joint democracy'
+    , 'Logged trade', 'Relative capacity'
+  )
+  , dep.var.labels = 'Alliance formation'
+  , notes = 'Yearly fixed effects not shown.'
+  , notes.append = T
+  # , add.lines = list(
+  #   c('AUC (in-sample)', ally1_auc_in, ally2_auc_in, ally3_auc_in)
+  #   , c('AUC (out-sample)', ally1_auc_out, ally2_auc_out, ally3_auc_out)
+  #   )
+  , title = '\\label{tab:AllyOutcomeAllDyads}Outcome stage: alliance formation, all dyads.'
+  , add.lines = list(c('', '3', '4', '5'))
+  , table.layout = '=ldma-t-s=n'
+  , header = F
+  )
+```
+
+
+\newpage
+
+\begin{landscape}
+```{r InterTableAllDyads, echo = F, fig.cap = 'Results: civil conflict intervention.', results = 'asis'}
+stargazer(
+  inter_1, inter_2, inter_30
+  , digits = 2
+  , omit = c('year1996', 'year1997', 'year1998', 'year1999', 'year2000')
+  , covariate.labels = c(
+    'Net cooperation', 'Alliance', 'Logged trade', 'IGO overlap'
+    , 'Religious dist.', 'Joint democracy', 'Relative capacity'
+    , 'Previous MIDs'
+    )
+  , dep.var.labels = 'Conflict intervention (+1 = state, -1 = rebels)'
+  , notes = 'Yearly fixed effects not shown.'
+  , notes.append = T
+  , title = '\\label{tab:InterTableAllDyads}Civil conflict intervention, all dyads.'
+  , add.lines = list(c('', '6', '6', '7', '7', '8', '8'))
+  , table.layout = '=ldma-t-s=n'
+  , header = F
+  )
+
+```
+\end{landscape}
+
+\newpage
+## Robustness check: MID onset, Cox proportional hazard models
+
+Per Footnote 5, I also employ Cox proportional hazard regression to identify whether a technically more appropriate model changes the findings, presented in Table \@ref(tab:MidCoxPH). Again, I find identical results in terms of sign and statistical significance. I find no evidence to reject the null hypothesis of invariant proportional hazards for the net-cooperation variable, although I do interact the measure of previous dyadic MIDs with time.
+
+```{r CoxPHAnalysis, include = F, echo = F}
+
+###############################################################################
+##
+## Analysis_Appendix_CoxPH.R
+## 
+## Purpose: Run a set of models on the finalized data.
+##
+## Depends on: MergeAnalysisData.R
+##
+## Function: Loads finished data, does some on-the-fly processing,
+##  and runs a set of predictive models.
+##
+## Output: .Rdata objects containing models.
+##
+## Output files: 
+##  - TBA
+##
+###############################################################################
+
+## Set working directory
+
+setwd('/Users/localadmin/Dropbox/Research/Cheaptalk')
+# setwd('/Users/localadmin/Dropbox/Research/CheapTalk')
+  
+###############################################################################
+##
+## Load in data on political relevance for subsetting data
+##
+###############################################################################
+
+## Political relevance (1995 - 2001)
+## Object: yearly_relevance (UNDIRECTED)
+load('./Data/AnalysisData/yearly_relevance.Rdata')
+
+
+###############################################################################
+##
+## Load in data for analysis
+##
+###############################################################################
+
+load('./Data/AppendixData/yearly_data.Rdata')
+
+
+###############################################################################
+##
+## Generate some on-the-fly variables
+##
+###############################################################################
+
+## One-year lead for MID occurrence (DV)
+yearly_data[, lag_midstart := shift(mid_start, 1, type = 'lead'), by = c('statea', 'stateb')]
+yearly_data[is.na(lag_midstart) & year == 2000, lag_midstart := 0]
+
+## One-year lead for alliance formation (DV)
+yearly_data[, lag_allianceformation := shift(alliance_formed, 1, type = 'lead'), by = c('statea', 'stateb')]
+
+## One-year lead for civil war intervention (DV)
+yearly_data[, lag_civilconflict := shift(civil_conflict, 1, type = 'lead'), by = c('statea', 'stateb')]
+yearly_data[, lag_supportstate := shift(support_state, 1, type = 'lead'), by = c('statea', 'stateb')]
+
+
+## Cumulative sum of events (for stratification)
+yearly_data[, sum_mids := NA_real_]
+yearly_data[, sum_mids := cumsum(mid_start), by = c('statea', 'stateb')]
+yearly_data[, sum_mids := shift(sum_mids, 1, type = 'lag'), by = c('statea', 'stateb')]
+yearly_data[is.na(sum_mids), sum_mids := 0]
+
+## Generate B -> A ICEWS weight
+temp_data <- yearly_data[, list(year, statea, stateb, weight_pos, weight_neg)]
+setnames(temp_data, c('year', 'stateb', 'statea', 'weight_pos_ba', 'weight_neg_ba'))
+yearly_data <- merge(yearly_data, temp_data, by = c('year', 'statea', 'stateb'))
+
+## Calculate undirected ICEWS weight variables
+yearly_data[, mean_weight_pos := rowMeans(as.matrix(yearly_data[, list(weight_pos, weight_pos_ba)]))]
+yearly_data[, mean_weight_neg := abs(rowMeans(as.matrix(yearly_data[, list(weight_neg, weight_neg_ba)])))]
+yearly_data[, mean_weight_net := mean_weight_pos - mean_weight_neg]
+# yearly_data[, min_weight := pmin(weight, weight_ba, na.rm = T)]
+# yearly_data[, max_weight := pmax(weight, weight_ba, na.rm = T)]
+
+## Dyad ID variable
+yearly_data[, dyad_id := paste(statea, stateb, sep = '_')]
+
+## Re-sort and remove duplicates
+setkeyv(yearly_data, c('year', 'statea', 'stateb'))
+yearly_data <- subset(unique(yearly_data))
+
+
+## Temp hack for trade data and MIDs in 2001
+yearly_data[is.nan(trade_flow), trade_flow := 0]
+yearly_data[is.na(trade_flow), trade_flow := 0]
+
+yearly_data[is.na(mid_start) & year == 2000, mid_start := 0]
+yearly_data[is.na(mid_start) & year == 2001, mid_start := 0]
+yearly_data[is.na(mid_start) & year == 2002, mid_start := 0]
+
+###############################################################################
+##
+## Transform the data to generate TWO undirected-dyad data sets:
+##  1. Politically relevant dyads ONLY
+##  2. All dyads
+##
+###############################################################################
+
+## Data set 1: Merge in data on political relevance. 
+##  This will both subset the number of states/dyads,
+##  AND change from A->B/B->A to A--B undirected dyad format.
+
+yearly_data_relevant <- merge(
+  yearly_data
+  , yearly_relevance
+  , by = c('year', 'statea', 'stateb')
+)
+
+
+## Data set 2: Subset data from directed-dyad to undirected-dyad format
+yearly_data_full <- yearly_data[
+  as.integer(as.factor(statea)) >
+    as.integer(as.factor(stateb))
+  ]
+
+##### Pre-processing function to generate training/test sets
+prep_data <- function(input_data, out_var = 'mid', out_year = 2000){
+  ## Subset by year <= 2001
+  analysis_data <- input_data[year <= out_year]
+  
+  ## Keep only complete cases
+  analysis_data <- analysis_data[
+    complete.cases(
+      analysis_data[
+        , 
+        list(lag_midstart, mean_weight_pos, mean_weight_neg
+             , alliance_present, trade_flow
+             , igo_overlap, relig_distance, joindem
+             , relcap, polity_diff)
+        ]
+    )
+    ]
+  
+  ## Time variable starting with 1
+  analysis_data[, time := year - 1994]
+  
+  ## Convert year to factor for modeling
+  analysis_data[, year := as.factor(year)]
+  
+  
+  ## Generate vector of test data dyads
+  dyad_ids <- unique(analysis_data$dyad_id)
+  n_dyads <- length(dyad_ids)
+  n_sample <- as.integer(n_dyads*.3)
+  sample_dyads <- sample(dyad_ids, n_sample, replace = F)
+  
+  ##### Process according to desired task
+  if (out_var == 'mid'){
+    
+    ## 0 - left-censored
+    analysis_data[, status := 0]
+    ## 1- Event at time t
+    analysis_data[lag_midstart == 1, status := 1]
+    ## 2 - right-censored
+    # analysis_data[year == 2001 & lag_midstart == 0, status := 2]
+    
+    ## Subset into training/testing data
+    train_rows <- createDataPartition(analysis_data$lag_midstart, times = 1, p = 0.7)
+    train_rows <- train_rows$Resample1
+    train_data <- analysis_data[train_rows]
+    test_data <- analysis_data[-train_rows]
+    
+    
+  } else if (out_var == 'alliance'){
+    ## 0 - left-censored
+    analysis_data[, status := 0]
+    ## 1- Event at time t
+    analysis_data[lag_allianceformation == 1, status := 1]
+    ## 2 - right-censored
+    # analysis_data[year == 2001 & lag_midstart == 0, status := 2]
+    
+    analysis_data[, sum_ally_years := sum(alliance_present), by = c('statea', 'stateb')]
+    analysis_data[, constant_alliance := 0L]
+    analysis_data[sum_ally_years == 6, constant_alliance := 1L]
+    # analysis_data <- analysis_data[sum_ally_years < 6]
+    
+    ## Subset into training/testing data
+    train_rows <- createDataPartition(analysis_data$lag_allianceformation, times = 1, p = 0.7)
+    train_rows <- train_rows$Resample1
+    train_data <- analysis_data[train_rows]
+    test_data <- analysis_data[-train_rows]
+    
+    
+  } else if (out_var == 'intervention'){
+    
+    analysis_data[is.na(analysis_data$lag_supportstate), lag_supportstate := 0]
+    analysis_data[, lag_supportstate := factor(lag_supportstate)]
+    analysis_data[, lag_supportstate := relevel(lag_supportstate, '0')]
+    
+    analysis_data <- analysis_data[lag_civilconflict == 1]
+    
+    ## Subset into training/testing data
+    train_rows <- createDataPartition(analysis_data$lag_supportstate, times = 1, p = 0.7)
+    train_rows <- train_rows$Resample1
+    train_data <- analysis_data[train_rows]
+    test_data <- analysis_data[-train_rows]
+    
+    
+  }
+  
+  ## Return data as list
+  return(list(train_data, test_data))
+}
+
+
+##### Generate training and testing data
+set.seed(8002)
+cleaned_data_relevant <- prep_data(yearly_data_relevant)
+mid_train_relevant <- cleaned_data_relevant[[1]]
+mid_test_relevant <- cleaned_data_relevant[[2]]
+
+
+###############################################################################
+##
+## Model set 1
+##  DV: MID onset
+##  Data: Relevant dyads
+##
+##  Modeling approach: Cox hazard analysis
+##
+###############################################################################
+
+##### Pre-processing function to generate training/test sets
+prep_data <- function(input_data, out_var = 'mid', out_year = 2000){
+  ## Subset by year <= 2001
+  analysis_data <- input_data[year <= out_year]
+  
+  ## Keep only complete cases
+  analysis_data <- analysis_data[
+    complete.cases(
+      analysis_data[
+        , 
+        list(lag_midstart, mean_weight_pos, mean_weight_neg
+             , alliance_present, trade_flow
+             , igo_overlap, relig_distance, joindem
+             , relcap, polity_diff)
+        ]
+    )
+    ]
+  
+  ## Generate vector of test data dyads
+  dyad_ids <- unique(analysis_data$dyad_id)
+  n_dyads <- length(dyad_ids)
+  n_sample <- as.integer(n_dyads*.2)
+  sample_dyads <- sample(dyad_ids, n_sample, replace = F)
+  
+  ##### Censoring variable for Surv input
+  if (out_var == 'mid'){
+    ## 0 - left-censored
+    analysis_data[, status := 0]
+    ## 1- Event at time t
+    analysis_data[lag_midstart == 1, status := 1]
+    ## 2 - right-censored
+    # analysis_data[year == 2001 & lag_midstart == 0, status := 2]
+  } else if (out_var == 'alliance'){
+    ## 0 - left-censored
+    analysis_data[, status := 0]
+    ## 1- Event at time t
+    analysis_data[lag_allianceformation == 1, status := 1]
+    ## 2 - right-censored
+    # analysis_data[year == 2001 & lag_midstart == 0, status := 2]
+    
+    # analysis_data[, sum_ally_years := sum(alliance_present), by = c('statea', 'stateb')]
+    # analysis_data <- analysis_data[sum_ally_years < 7]
+  }
+  
+  
+  ## Time variable starting with 1
+  analysis_data[, time := year - 1994]
+  
+  ## Subset into training/testing data
+  train_data <- analysis_data[!dyad_id %in% sample_dyads]
+  test_data <- analysis_data[dyad_id %in% sample_dyads]
+  
+  ## Return data as list
+  return(list(train_data, test_data))
+}
+
+##### Generate training and testing data
+set.seed(80085)
+cleaned_data_relevant <- prep_data(yearly_data_relevant)
+mid_train_relevant <- cleaned_data_relevant[[1]]
+mid_test_relevant <- cleaned_data_relevant[[2]]
+
+
+## Generate Survival objects
+mid_train_onset_relevant <- Surv(
+  time = mid_train_relevant$time
+  # , time2 = mid_train_relevant$time+1
+  , event = mid_train_relevant$status
+)
+
+mid_test_onset_relevant <- Surv(
+  time = mid_test_relevant$time
+  , time2 = mid_test_relevant$time+1
+  , event = mid_test_relevant$status
+)
+
+##### Running models
+
+## Model 1: Functional variables 
+##  (trade, capacity, alliance)
+mid_cox_1 <- cph(
+  mid_train_onset_relevant
+  ~ alliance_present
+  + log(trade_flow + 1)
+  + relcap
+  + sum_mids*year
+  , data = mid_train_relevant
+  , x = T
+  , y = T
+  , surv = T)
+
+## Model 2: Adding normative/structural variables 
+##  (joint democracy, religious distance, IGOs)
+mid_cox_2 <-  cph(
+  mid_train_onset_relevant
+  ~ alliance_present
+  + log(trade_flow + 1)
+  + igo_overlap
+  + relig_distance
+  + joindem
+  + relcap
+  + sum_mids*year
+  , data = mid_train_relevant
+  , x = T
+  , y = T
+  , surv = T)
+
+  
+## Model 3: Adding low-salience trust variable
+##  (mean weight)
+mid_cox_30 <- cph(
+  mid_train_onset_relevant
+  ~ mean_weight_net
+  + alliance_present
+  + log(trade_flow + 1)
+  + igo_overlap
+  + relig_distance
+  + joindem
+  + relcap
+  + sum_mids*year
+  , data = mid_train_relevant
+  , x = T
+  , y = T
+  , surv = T)
+
+```
+
+
+```{r MidTableCoxPH, echo=F, cache = T, fig.cap='Results: dyadic MID onset, Cox proportional hazard model.', message=F, warning=F, results='asis'}
+stargazer(
+  mid_cox_1, mid_cox_2, mid_cox_30
+  , digits = 2
+  , omit = c('year1996', 'year1997', 'year1998', 'year1999', 'year2000')
+  , covariate.labels = c(
+    'Net cooperation', 'Alliance', 'Logged trade', 'IGO overlap'
+    , 'Religious dist.', 'Joint democracy', 'Relative capacity'
+    , 'Previous MIDs', 'Year', 'Previous MIDs * Year'
+    )
+  , dep.var.labels = 'Dyadic MID onset'
+  , add.lines = list(c('', '1', '2', '3'))
+  , title = '\\label{tab:MidCoxPH}Results: dyadic MID onset, Cox proportional hazards model.'
+  , table.layout = '=ldma-t-s=n'
+  , header = F
+  )
+```
+\newpage
+## Full list of CAMEO codes
+Table \@ref(tab:CameoCodes) presents a full list of all CAMEO event codes.
+```{r CameoCodes, results = 'asis'}
+# print(cameocodes)
+# xtable::xtable(cameocodes)
+knitr::kable(
+cameocodes
+, booktabs = T
+, col.names = c('Root Code', 'Mean Score', 'Type', 'Action')
+, caption = '\\label{tab:CAMEOcodes}CAMEO Root codes and Goldstein scores.'
+, digits = 2
+, longtable = T
+)
+```
+
+# References

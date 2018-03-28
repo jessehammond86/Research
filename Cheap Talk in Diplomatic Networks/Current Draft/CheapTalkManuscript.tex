@@ -1,0 +1,2207 @@
+\documentclass[10pt,]{article}
+\usepackage[]{mathpazo}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\usepackage[margin=1in]{geometry}
+\usepackage[unicode=true]{hyperref}
+\hypersetup{
+            pdftitle={Cheap Talk, Costly Action: Using Verbal Interaction to Predict Conflict and Cooperation},
+            pdfborder={0 0 0},
+            breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage{natbib}
+\bibliographystyle{apsr}
+\usepackage{longtable,booktabs}
+% Fix footnotes in tables (requires footnote package)
+\IfFileExists{footnote.sty}{\usepackage{footnote}\makesavenoteenv{long table}}{}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\IfFileExists{parskip.sty}{%
+\usepackage{parskip}
+}{% else
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{5}
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+% set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+
+\linespread{1.3}
+
+
+% You know, for landscape
+\usepackage{lscape}
+\usepackage{pdfpages}
+
+
+% pandoc does not parse latex env - https://groups.google.com/forum/?fromgroups=#!topic/pandoc-discuss/oZETB5Ii1Cw
+\newcommand{\blandscape}{\begin{landscape}}
+\newcommand{\elandscape}{\end{landscape}}
+
+% Make new page before each section
+\let\stdsection\section
+\renewcommand\section{\newpage\stdsection}
+
+% Highlight inline `code`
+\usepackage{soul}
+\usepackage{xcolor}
+
+\definecolor{Light}{gray}{.97}
+\sethlcolor{Light}
+
+\let\OldTexttt\texttt
+\renewcommand{\texttt}[1]{\OldTexttt{\hl{#1}}}
+
+
+\clubpenalty=10000      %kara za sierotki
+\widowpenalty=10000  % nie pozostawiaj wdów
+\brokenpenalty=10000    % nie dziel wyrazów miêdzy stronami
+\exhyphenpenalty=999999   % nie dziel s³ów z myœlnikiem
+\righthyphenmin=3     % dziel minimum 3 litery
+
+\renewcommand{\topfraction}{0.95}
+\renewcommand{\bottomfraction}{0.95}
+\renewcommand{\textfraction}{0.05}
+\renewcommand{\floatpagefraction}{0.35}
+
+
+% Stuff I added.
+% --------------
+
+\usepackage{indentfirst}
+\usepackage[doublespacing]{setspace}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\usepackage{layout}   
+\usepackage{caption}
+\lhead{\sc Cheap Talk, Costly Action: Using Verbal Interaction to Predict Conflict
+and Cooperation}
+\chead{}
+\rhead{\thepage}
+\lfoot{}
+\cfoot{}
+\rfoot{}
+
+\usepackage{tabularx}
+\usepackage{colortbl}
+\usepackage{hhline}
+%
+%\newcommand\MyBox[1]{%
+%	\fbox{\parbox[c][1.7cm][c]{1.7cm}{\centering #1}}%
+%}
+%\newcommand\MyVBox[1]{%
+%	\parbox[c][1.7cm][c]{1cm}{\centering\bfseries #1}%
+%}  
+%\newcommand\MyHBox[2][\dimexpr1.7cm+2\fboxsep\relax]{%
+%	\parbox[c][1cm][c]{#1}{\centering\bfseries #2}%
+%}  
+%\newcommand\MyTBox[4]{%
+%	\MyVBox{#1}\MyBox{#2}\hspace*{-\fboxrule}%
+%	\MyBox{#3}\hspace*{-\fboxrule}%
+%	\MyBox{#4}\par\vspace{-\fboxrule}
+%}  
+
+\renewcommand{\headrulewidth}{0.0pt}
+\renewcommand{\footrulewidth}{0.0pt}
+
+\usepackage{sectsty}
+\sectionfont{\centering}
+\subsectionfont{\centering}
+
+\newtheorem{hypothesis}{Hypothesis}
+
+% Begin document
+% --------------
+
+\begin{document}
+
+\doublespacing
+
+
+\begin{center}Abstract\end{center}
+
+\noindent Quantitative tests of constructivist theory tend to rely on structural
+dyadic variables such as shared political institutions, societal
+similarity, and joint IGO membership to explain conflict and cooperation
+between states. In this article, I show that we can improve these
+explanations by measuring time-varying levels of affinity or enmity
+between states more directly. To measure these underlying relationships,
+I analyze verbal interactions between states: threats, promises,
+accusations, and so on. These are low-cost, low-information events that
+individually say little about how states view one another. In the
+aggregate, however, verbal interactions serve two purposes. First,
+verbal interactions are imperfect but useful indicators of the
+underlying level of trust or affinity between states. Second, over the
+long term these interactions constitute identities, socializing states
+toward norms of cooperation or conflict with one another. I find that
+even after controlling for a range of variables common in the conflict
+literature, verbal cooperation and conflict predict material cooperation
+and conflict. States that engage one another positively tend to avoid
+militarized disputes and are more likely to assist one another during
+domestic crises. Conversely, states which engage one another negatively
+are more likely to engage in MIDs and more likely to attempt to
+destabilize one another during domestic crisis.
+
+
+
+
+\newpage
+
+Word count: 12,006 excluding appendix and abstract.
+
+``Whoever can be trusted with very little can also be trusted with much,
+and whoever is dishonest with very little will also be dishonest with
+much'' (Luke 16:10, NIV Translation).
+
+\section{Introduction}\label{introduction}
+
+Quantitative international relations scholarship has focused
+overwhelmingly on recording and explaining major changes in interstate
+behavior such as armed conflict, formation and breaking of alliances,
+and waxing or waning of trade flows. This makes sense: given limited
+resources and time, scholars focus their efforts on explaining outcomes
+that affect the lives and wellbeing of thousands or millions of people.
+The limitation of this approach, however, is that it produces a
+theoretical and empirical landscape limited to only high-intensity
+interactions. Theories and data alike are tailored to explaining the
+highest `peaks' and deepest `valleys' over time in international
+relations, and have little to say about everything that goes on in
+between.
+
+Although they are generally dismissed as `cheap talk', the level and
+tone of low-cost, day-to-day verbal interactions between states can be
+useful in predicting when and how high-cost forms of cooperation and
+conflict occur. This is because these low-cost events make up the vast
+majority of \emph{de facto} foreign policy ---- they set the tone of
+interstate relations, and over time, aid in building mutually friendly
+or oppositional identities. States that cooperate on low-intensity
+issues and frame one another as friends, or at least non-threats, are
+able to build trust over time. States that trust each other are more not
+just more likely to avoid major conflict; they are more likely to
+actively cooperate on important economic and security issues.
+Conversely, states that view one another with distrust or acrimony are
+not only less likely to actively cooperate, but more likely to let
+disputes escalate to the level of militarized conflict.
+
+\section{Literature review and
+theory}\label{literature-review-and-theory}
+
+This analysis is rooted in constructivist literature focusing on
+normative or identity-based factors explaining cooperation and conflict
+between states. With minor variations, scholars of the Kantian peace
+point out the importance of a triad of factors --- shared democratic
+institutions
+\citetext{\citealp[e.g.][1158]{Doyle1986a}; \citealp[626]{Russett1993}; \citealp[398-400]{Danilovic2007}},
+economic interdependence \citep[e.g.][287-288]{Oneal2003}, and
+international organizations and law \citep[e.g.][442]{Dorussen2008} ---
+in helping states avoid military crises, and in preventing them from
+escalating to all-out war when they do occur. Although it is not without
+its critics
+\citetext{\citealp[e.g.][174-175]{Gartzke2013}; \citealp[584-585]{Ward2007}}
+the finding that stable democracies who share strong economic ties and
+membership in the same international organizations are less likely to
+engage in militarized conflict with one another is one of the more
+prominent findings in the last half-century of political science
+\citep[e.g.][388-398]{Oneal2003}.
+
+However, the Kantian peace literature is necessarily limited, by its
+very nature, to explaining only a subset of international relations.
+Because it emphasizes the importance of democratic institutions (in many
+cases, more so than economic ties or international law) the theory has
+less to say about when and why peaceful relations emerge between
+non-democratic dyads, whether they are mutual autocracies (as a very
+general term) or mixed democratic/non-democratic pairs. Peaceful
+relations and cooperation may not be as common in these cases as they
+are in democratic dyads, but `oases' of peaceful interaction in space
+and time exist and are of interest to international relations scholars
+\citep[6]{Kivimaki2001}.
+
+Constructivist scholarship presents a generalization of the Kantian
+peace, emphasizing the normative and identity-based factors that bind
+state dyads together and pointing out that shared norms, ideas, and
+identities are not unique to democratic dyads, nor does the general
+mechanism of `norms' always lead to cooperation
+\citetext{\citealp[e.g.][863]{Ruggie1998}; \citealp[402-404]{Finnemore2001}}.
+Work in this tradition attempts to identify when, where, and how shared
+\emph{cooperative} identities and norms can emerge across democratic,
+non-democratic, and mixed-regime dyads. Constructivist scholars
+generally agree that institutional and economic factors matter, but
+emphasize a broader role for cooperative norms, ideas, and identities in
+promoting peace between states \citep[229]{Wendt1999}. States that trust
+one another are more likely to cooperate with one another and less
+likely to engage in conflict because they have acquired some level of
+``\ldots{} mutual responsiveness, that is, they may gain the ability to
+more or less predict one another's behavior and come to \emph{know} each
+other as trustworthy'' \citep[254]{Adler1997a}. Shared material or
+political characteristics may increase the probability that states will
+view each other as similar or trustworthy, but are themselves neither
+necessary nor sufficient conditions for cooperation
+\citep[19]{Kivimaki2001}. Rather, these similarities lower barriers to
+communication and trust, making it more likely that states will
+recognize -- and over time, reinforce -- some level of shared identity
+or kinship with one another
+\citetext{\citealp[1158]{Doyle1986a}; \citealp[862-863]{Ruggie1998}}.
+
+This literature emphasizes that it is \emph{how states view one
+another}, not just empirical factors like resources or institutions,
+that governs patterns of conflict and cooperation: states that perceive
+one another as fundamentally similar are less likely to engage in
+conflict \citep[416-417]{Peceny1997}. By contrast, states that define
+their identities as mutually conflictual or alien tend not just to lack
+common ground for communication and cooperation, but actually infer
+oppositional motivations when explaining and assessing the actions of
+their partners \citep[502-504]{RisseKappen1995}. This tendency for
+states to `believe the worst' about one another makes cooperation much
+more difficult, and raises the likelihood of escalation or even
+pre-emptive conflict as a form of self-defense against a dangerous and
+unreasonable opponent. Identities and ideas are key drivers of state
+behavior that often, but not always, correlate with materialistic or
+objective similarities in regime type, geographic or cultural proximity,
+or economic interdependence. The emergence of shared identities is
+possible outside of the democratic-dyad case, even if it less common
+\citep[18-19]{Peceny2002}.
+
+Communication plays a crucial role in the emergence of shared norms and
+identities. Repeated positive interactions can lead to a fundamental
+restructuring of identities: a blurring of the lines between `us' and
+`them' that are taken to be exogenous and unchanging in positivist
+theories of international relations
+\citetext{\citealp[246]{Wendt1999}; \citealp[573-575]{Ashizawa2008}}.
+Actions and identities are mutually constitutive: ``\ldots{}even
+identities are generated in party by interaction -- both the generic
+identities of states qua states and their specific identities''
+\citep[879]{Ruggie1998}. Cooperative interactions between states serve
+as self-reinforcing evidence of an underlying shared identity; as this
+sense of collective identity is shared by both societies, cooperation
+and coordination in foreign policy becomes easier and more attractive.
+Repeated interactions also provide information about one another's
+incentives and preferences:
+
+\begin{quote}
+Social acts thus help generate expectations among states about each
+other's behavior in future interactions, with each subsequent social act
+potentially reinforcing (`reproducing') or modifying these meanings and
+expectations. If actions are repeated frequently and consistently enough
+(that is, if they are `recursive'), their products become
+institutionalized. This makes them appear to be relatively stable and
+external elements of objective social reality, and generates a certain
+degree of path dependence \citep[104]{Kahl1998}.
+\end{quote}
+
+The `social acts' Kahl identifies are rarely operationalized in
+empirical work. Instead, tests of the constructivist peace often utilize
+structural variables identifying similarities between states
+\citep[373-374]{Corbetta2013}. Like other social entities, states that
+are closer along economic, political, or socio-cultural dimensions are
+more `alike'; they should therefore be able to understand one another
+better, should communicate more effectively, and should ultimately be
+able to find common ground for cooperation more easily than states that
+do not share these characteristics
+\citetext{\citealp[27-29]{Blau1977}; \citealp[717-719]{Popielarz1995}}.
+
+However, states with shared characteristics do not automatically
+cooperate with one another \citep[495]{RisseKappen1995}. The assumption
+that shared characteristics necessarily lead to affinity can be
+misleading; many states with long histories of violence share cultural
+practices, ethnic demographics, and other important characteristics; in
+some cases, shared cultural characteristics are actually associated with
+an increase in the likelihood of conflict between states
+\citep[77-78]{Gartzke2006}. Using shared characteristics as a measure of
+shared identity, therefore, can be something of a pitfall. These
+structural analyses are insightful and valuable; however, they
+underestimate the importance of interaction and communication, not just
+underlying similarity, in building shared identity.
+
+Given the theoretical emphasis on interactions rather than shared
+characteristics as the driving force behind identity formation, why does
+the extant literature focus primarily on structure? I argue that there
+are two reasons that this mechanism has seen little empirical
+examination. First, there has been relatively little effort in both the
+theoretical and data-gathering realms towards identifying acts of
+international \emph{cooperation} which are essential to measuring
+friendly international relations. Scholars in conflict studies tend to
+treat peace as simply the absence of armed conflict. However, a more
+stable peace should logically involve active cooperative engagement,
+rather than simply a lack of war. Instead, scholarly efforts have
+largely focused on highly salient acts of conflict such as militarized
+disputes. This makes sense, given the limited resources available to
+scholars and the substantive importance of avoiding tragedy and loss of
+life. The result, however, is that we have a much more detailed theories
+and data sets describing international conflict than we do international
+cooperation. If conflict and cooperation are opposite ends of some
+relational spectrum, as \citet[118-120]{Ward1982} suggests, then better
+measures of international cooperation may help us better understand and
+avoid international conflict.
+
+The second factor limiting our ability to measure and explain
+trust-building between states is the lack of attention paid to
+low-intensity, routine cooperative and conflictual interactions between
+states\footnote{One notable exception to this trend is the work of
+  \citet{Jungblut2002} linking the \emph{issue area} of low-intensity
+  conflict, using the COPDAB events data set, to the probability of
+  militarized interstate dispute. However, they limit their analysis to
+  only conflictual event, ignoring acts of interstate cooperation.}.
+Most of the outcomes we are interested in as scholars are, naturally,
+high-intensity events that involve changes in state power, human
+casualties, large increases in economic indicators, and so on. However,
+these outcomes are relatively rare compared to the vast majority of
+interactions that make up day-to-day international relations. Their
+rarity, and their severity, make these events hard to predict in
+isolation. Military conflicts, treaty agreements, and other important
+acts of conflict and cooperation do not occur in isolation, and they do
+not appear suddenly. Rather, these events are usually the culmination of
+months or years of low-intensity interactions as states negotiate,
+posture, and otherwise assess whether or not they view one another more
+as partners or as threats.
+
+States interact near-constantly through diplomatic personnel, government
+and military delegations, and other forms of political interaction.
+These run-of-the-mill incidents usually go unrecorded because they are
+generally not salient. It is not particularly interesting, in isolation,
+that the United Kingdom government reassurances of friendship to Saudi
+Arabian leadership \citep{BBC2016} or that Chad and Sudan held a meeting
+to discuss border security \citep{Tribune2016}. These individual events
+do not decisively impact the economic or security environment of the
+states involved, and as such, they tend to be treated as unimportant.
+When taken as part of a whole, however, we can use these events to infer
+underlying patterns of trust and enmity between states.
+
+A pair of states that often engages in low-intensity forms of
+cooperation with one another such as symbolic gestures, statements of
+support, collaboration on disaster relief or scientific research and so
+on, is engaging in trust-building behavior. These routine actions do not
+\emph{individually} shape interstate relations, but over time, they
+signal and reinforce shared norms and identities of cooperation.
+Populations that observe their government engaging in positive relations
+with another state are more likely to internalize these norms, leading
+to a virtuous cycle in which state leadership and domestic populations
+believe that their counterparts in other states are fundamentally
+trustworthy or friendly. The result is a normalization of cooperation
+between these states.
+
+Positive interactions over time both signal and create shared identity
+between states. This not only makes cooperation easier, broadly
+speaking, but also lowers barries for states to engage in higher-cost
+forms of cooperation that provide greater mutual benefit, but are also
+more costly and risky for the states involved. High-intensity
+cooperation takes such forms as as joining formal international
+institutions; relaxing barriers to travel or trade flows; or delegating
+some level of national security to another actor through a defense pact
+or military alliance. These policy decisions involve significant risk:
+by engaging in these forms of cooperation, states may open themselves up
+to defection and the loss of wealth or security, as has been pointed out
+repeatedly in functionalist studies of interstate bargaining
+\citep[e.g.][271-273]{Fearon1998b}. States choose their partners
+carefully, and are more likely to engage in high-intensity cooperation
+with partners with which they share some sense of identity or trust;
+previous experience serves as a foundation for future cooperation.
+
+Conversely, negative interactions both signal and create a sense of
+distrust in which each state views its partner as enemy or alien. States
+with acrimonious relations identify one another as opponents, making
+cooperation more difficult and conflict easier. This is also a
+self-reinforcing cycle: as states define themselves in opposition to one
+another, verbal and material conflict becomes the order of the day in
+how these states interact. This also means that higher-cost or
+higher-risk forms of conflict become a more viable option to solve
+disputes or divide stakes. If an opponent cannot be trusted or
+understood, it is difficult to identify any shared ground on which an
+agreement can be structured, and little reason to expect such an
+agreement to be kept.
+
+High-intensity forms of conflict are those that involve significant
+political, economic, or human cost. War is the clearest example of
+high-intensity conflict, as it can involve major costs up to the
+existence of the state itself. Another example is the use conomic
+sanctions, a common tool of coercion that exacts costs on both the
+initiator and the target. States can also engage rivals indirectly, for
+example by giving material or financial aid to insurgent or terrorist
+groups operating within another country. In all such cases, states are
+willingly engaging in costly or risky behavior in order to either (1)
+gain some greater stake or (2) exact some (proportionally greater) cost
+on another party.
+
+Low-intensity interactions both signal and create relationships between
+states -- over time, these repeated interactions define states'
+identities vis-à-vis one another, either as partners/friends or as
+rivals/enemies. States are more likely to engage in costly,
+high-intensity forms of cooperation with other states with whom they
+share a friendly relationship; conversely, states that view one another
+as untrustworthy or `alien' are unlikely to risk betrayal through
+cooperation, and may view high-intensity conflict as the only viable
+foreign policy tool in dealing with one another.
+
+\section{Hypotheses}\label{hypotheses}
+
+From this theory linking low-intensity interactions to underlying bonds
+of trust or distrust, I derive several testable hypotheses. The key
+predictor in testing these hypotheses is the level of cooperation or
+conflict present in low-intensity interactions between states over time.
+First, I expect that states that cooperate more on a day-to-day basis
+are less likely to experience high-intensity forms of international
+conflict. States that share norms of trust and cooperation are able to
+engage in peaceful forms of dispute resolution; those that view one
+another with acrimony are less able and willing to negotiate, or place
+much faith in the outcome of negotiations
+\citep[500-502]{RisseKappen1995}. When disputes occur between states
+that distrust one another, they are more likely to escalate in severity.
+As such, I expect that by looking at patterns of low-intensity
+cooperation and conflict in previous time periods, we can better explain
+and predict of militarized conflict in the current time period.
+
+\begin{itemize}
+\tightlist
+\item
+  Hypothesis 1: The greater the level of low-cost verbal cooperation
+  (conflict) between states \emph{i} and \emph{j}, the lower (higher)
+  the probability of a MID occurring between these two states.
+\end{itemize}
+
+Not only are cooperative state dyads less likely to experience
+high-intensity conflict, they are also more likely to engage in
+high-intensity cooperation. One interesting form of costly interstate
+cooperation is the choice to establish formal security agreements, which
+I generalize with the term `alliances'. Alliances are credible
+commitments between states to refrain from attacking one another, or
+support one another in issues of national security. They are not entered
+into lightly, as they involve sacrificing some level of autonomy over
+national defense by delegating security issues to a party outside state
+control \citep[904-905]{Morrow1991}, as well as a credible commitment to
+intervening in a partner's conflict should one arise
+\citep[317-318]{Smith1998}. Alliances represent significant costs and
+risks; as such, they are an excellent example of the type of
+high-intensity cooperation that requires some underlying level of trust
+or affinity between states.
+
+\begin{itemize}
+\tightlist
+\item
+  Hypothesis 2: The greater the level of low-intensity cooperation
+  (conflict) between states \emph{i} and \emph{j}, the higher (lower)
+  the probability that these states establish a formal alliance.
+\end{itemize}
+
+Finally, I expect that the underlying relationship between states
+affects their propensity to intervene directly in one another's domestic
+affairs, particularly when one state is experiencing civil conflict.
+Intervention in another state's conflict is another example of a
+high-intensity, costly foreign policy decision. Intervention does not
+just have direct material costs: failed interventions can lead to
+domestic backlash \citep[51]{Aydin2010}, or even escalation into
+interstate military disputes if the target state objects to being
+meddled with \citep[480-482]{Gleditsch2008}.
+
+States that see friends and allies undergoing civil conflict are likely
+to offer assistance -- financial, material, or even direct military
+involvement -- to the beleaguered government. States that share a
+relationship of trust and cooperation are more likely to intervene to
+support one another during domestic crises in order to keep a stable
+relationship, signal norms of cooperation and support, and set a
+precedent for future engagement\footnote{See \citep{Corbetta2013} for an
+  example of this logic tested in states' supporting or opposing one
+  another during interstate conflict.}. States that distrust one another
+are more likely to see civil conflict as an opportunity to impose costs
+on a rival: by supporting insurgent movements in another state, the
+intervener may hope to weaken its opponent by increasing the intensity,
+duration, and costs of civil conflict, or even force a regime change if
+the existing government is overthrown
+\citetext{\citealp[349-351]{BalchLindsay2008}; \citealp[128]{Lounsbery2016}}.
+I expect that states that share an underlying level of trust are more
+likely to intervene to support one another, whereas states that share
+mutual acrimony are more likely to intervene to undermine one another.
+
+\begin{itemize}
+\item
+  Hypothesis 3a: Given a state dyad (\emph{i, j}) in which state
+  \emph{j} is experiencing civil conflict, the greater the level of
+  low-intensity cooperation (conflict) between (\emph{i, j}), the higher
+  (lower) the probability that state \emph{i} will intervene to support
+  insurgents in state \emph{j}.
+\item
+  Hypothesis 3b: Given a state dyad (\emph{i, j}) in which state
+  \emph{j} is experiencing civil conflict: the greater the level of
+  low-intensity cooperation (conflict) between (\emph{i, j}), the higher
+  (lower) the probability that state \emph{i} will intervene to support
+  the government in state \emph{j}.
+\end{itemize}
+
+\section{Research design}\label{research-design}
+
+\subsection{Event data to measure trust and
+distrust}\label{event-data-to-measure-trust-and-distrust}
+
+Interactions and identities are mutually constitutive. Positive
+interactions lead to the establishment of shared norms and identities
+between states, while negative interactions establish norms of animosity
+and oppositional identities. This means that --- at least to a limited
+extent --- we can make inferences about shared identities by observing
+interactions between states. States that share cooperative norms and
+identities are more likely not just to avoid military conflict, but to
+engage in active forms of cooperation.
+
+Events data provide a promising avenue for operationalizing these
+interaction-based theories of identity formation. These are highly
+granular data structures in which a single observation corresponds to a
+discrete interaction between two parties: ``an occurrence standing out
+against the run-of-the-mill course of everyday life, a discrete unit of
+behavior that can be pinpointed in time and space''
+\citep[21]{Merritt1994}. These data provide the closest thing we have to
+`ground-level' metrics of interstate interaction. Although events data
+has recently experienced a surge in popularity, scholars have been
+codifying and analyzing politicized events for over a century
+\citetext{\citealp[19-20]{Merritt1994}; \citealp[548-550]{Schrodt2012}}.
+
+Until relatively recently, the sheer workload of generating event data
+made it difficult to build data sets with sufficient geographic,
+temporal, or issue-area coverage to engage in large-scale studies of
+international relations. In recent years, however, significant advances
+in both the availability of raw data (mainly digitized news-media
+archives) and computational power have led to a resurgence in the
+collection and analysis of political event data in international
+relations. Large, well-funded data collection initiatives have sprung up
+in in many issue areas. Some
+\citep[e.g.][]{Raleigh2010, Sundberg2013, Chojnacki2012} focus primarily
+on violence and armed conflict, while others
+\citep[e.g.][]{Salehyan2012, Nardulli2011} look at a broader range of
+events dealing with social and political unrest. A few ongoing efforts
+\citep{OBrien2010, Schrodt2014} take a more `universalist' approach,
+coding a wide cross-section of politically relevant events using formal
+ontologies of both cooperation and. These universalist data sets are
+useful in measuring the tone of low-intensity interactions between
+states because they adopt an extremely broad approach to gathering and
+coding political interactions. For example, the most common system used
+to codify these events data is the CAMEO ontological framework
+\citep{Gerner2009}, which includes over 170 categories of interaction
+between states. The vast majority of these categories describe
+low-intensity verbal interactions: statements of support or
+condemnation, diplomatic meetings, offers and inquiries, and other
+day-to-day interactions that have little impact, in isolation, on
+interstate relations \citep[90]{OBrien2010}.
+
+I argue that these low-cost interactions are exactly the type of `social
+acts' \citep[104]{Kahl1998} that constitute relationships of trust or
+distrust between states. These are minor, low-cost interactions that,
+over time, reinforce identities of friendship or enmity. As such,
+examining the way states interact with one another may provide useful
+information about the underlying relationships between states. This
+information is not directly observable using only structural
+characteristics such as ethnic, religious, or linguistic similarity, and
+can be used in conjunction with existing variables to explain and
+predict high-intensity outcomes of cooperation and conflict.
+
+\subsection{Key independent variable: low-intensity
+interactions}\label{key-independent-variable-low-intensity-interactions}
+
+Measures of low-intensity cooperation and conflict were constructed
+using raw data from the Integrated Crisis Warning System (ICEWS)
+available for a 21-year period from January 1, 1995, through December
+31, 2015. ICEWS uses fully automated text-analysis methods to extract
+event information from a specified set of news media sources
+\citep{OBrien2010}. This automated approach is orders of magnitude
+faster and less expensive than human coding, allowing ICEWS to process
+and generate a prodigious amount of data each day. News reports are
+coded to event data format using the Conflict And Mediation Event
+Ontology (CAMEO) framework \citep{Gerner2009}, assigning each event to
+one of 256 specific categories, which are organized into 20 aggregated
+`root codes'.
+
+Table \ref{tab:RootCodes} lists these root codes\footnote{A table
+  describing all event-level codes in ICEWS can be found in the
+  Appendix.}. ICEWS include a numeric value termed a `Goldstein Score'
+based on the metric introduced by \citep[376]{Goldstein1996}. This
+measure quantifies the intensity of each event, measuring the extent to
+which an event can be described as `cooperative' or `conflictual'. This
+metric ranges from -10 to +10, where cooperative events receive positive
+scores and conflictual events receive negative scores. Higher absolute
+values indicate more intense cooperation or conflict: highly conflictual
+interactions like military violence are scored very low, while highly
+cooperative actions like sending humanitarian aid are scored very high.
+
+\newpage
+
+\begin{table}
+
+\caption{\label{tab:RootCodes}CAMEO Root codes and Goldstein scores.}
+\centering
+\begin{tabular}[t]{rrll}
+\toprule
+Root Code & Mean Score & Type & Action\\
+\midrule
+1 & 0.74 & Verbal & Make Public Statement\\
+2 & 2.31 & Verbal & Appeal\\
+3 & 6.03 & Verbal & Express Intent to Cooperate\\
+4 & 3.03 & Verbal & Consult\\
+5 & 5.28 & Verbal & Engage in Diplomatic Cooperation\\
+\addlinespace
+6 & 6.84 & Material & Engage in Material Cooperation\\
+7 & 7.60 & Material & Provide Aid\\
+8 & 6.80 & Material & Yield\\
+9 & -2.00 & Verbal & Investigate\\
+10 & -5.00 & Verbal & Demand\\
+\addlinespace
+11 & -2.00 & Verbal & Disapprove\\
+12 & -4.31 & Verbal & Reject\\
+13 & -6.23 & Verbal & Threaten\\
+14 & -6.88 & Material & Protest\\
+15 & -7.20 & Material & Exhibit Military Posture\\
+\addlinespace
+16 & -6.15 & Verbal & Reduce Relations\\
+17 & -6.55 & Material & Coerce\\
+18 & -9.35 & Material & Assault\\
+19 & -9.79 & Material & Fight\\
+20 & -9.93 & Material & Engage in Unconventional Mass Violence\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The result is a daily snapshot of dyadic international interactions with
+information about the substantive nature of each interaction, as well as
+quantitative estimates of the degree to which each interaction is
+cooperative or conflictual. Table \ref{tab:ICEWSEvents} shows a few
+ICEWS entries from early 2015 that illustrate the data structure of
+these event records.
+
+\begin{table}
+
+\caption{\label{tab:ICEWSEvents}Sample ICEWS event records.}
+\centering
+\begin{tabular}[t]{rlllrr}
+\toprule
+Date & Source State & Target State & Event & Root Code & Goldstein Score\\
+\midrule
+20150101 & United Kingdom & Pakistan & Consult & 4 & 1\\
+20150101 & United States & Syria & Use Aerial Weapons & 19 & -10\\
+20150101 & Palestinian Territories & Israel & Bring Lawsuit & 1 & -2\\
+20150101 & Israel & Nigeria & Provide aid & 7 & 7\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+My theory revolves around the importance of low-cost interactions.
+However, because ICEWS codes such a wide range of events, some ICEWs
+event categories overlap with the outcomes I am trying to predict. For
+example, while ICEWS does not include an event for `war onset', it does
+include event codes for escalations of force, military battles, and
+other forms of wartime violence. As such, it may be misleading to use
+all categories of ICEWS events.
+
+To avoid this issue of endogeneity, I focus solely on verbal
+interactions betweeen states. Verbal interactions are generally viewed
+to be a low-information method of communication, often referred to as
+`cheap talk' as compared to more salient or costly forms of interaction
+\citetext{\citealp[e.g.][274-275]{Fearon1998b}; \citealp[599]{Kydd2003}}.
+Making claims, threats, or demands is easy, while carrying out the
+actions implied in these statements is much more difficult. However,
+even cheap talk is not wholly uninformative, especially when the message
+it contains is repeated with little variation over time. States that
+habitually engage one another positively are signalling some underlying
+affinity: even if each individual message has little impact, over time a
+consistent positive tone emerges. Again, I do not claim that cooperative
+verbal interactions \emph{cause} states to avoid conflict or engage in
+high-cost material cooperation. Instead, I argue that cooperative verbal
+interactions signal and (over a longer time period) contribute to an
+underlying sense of trust or affinity between states.
+
+The challenge is to use the ICEWS data, which contains a wide range of
+verbal interactions, to elicit some measure of the level or intensity of
+verbal cooperation and conflict between states over some time period.
+One way to do this might be to extract the number of events between each
+state dyad. However, this creates serious issues of selection bias.
+ICEWS relies primarily on American and European English-language
+sources, leading to a distinct pattern in which Western,
+English-language states receieve significantly more news coverage
+overall than smaller, non-Western, non-English-speaking states. As such,
+a simple count of events is likely to be heavily weighted by the
+behavior of these over-reported states \citep{Barnett2013}.
+
+Rather than taking the simple count of events between state \emph{i} and
+state \emph{j}, I instead take the \emph{share of all events} initiated
+by state \emph{i} that target state \emph{j} for each category of
+interaction listed in ICEWS. By calculating the percentage of \emph{i}'s
+activity that targets state \emph{j} instead of states \emph{k, l,
+\ldots{}, n}, I can extract more reliable measures of the extent to
+which the \emph{i, j} dyad interacts, given the level of media attention
+each state receives.
+
+After taking normalized levels of interaction between all state dyads, I
+measure the tone of verbal interaction between states using the
+Goldstein scores described previously, where larger positive (negative)
+scores indicate higher intensity of cooperation (conflict). I take the
+net Goldstein score of all normalized interactions between a given state
+dyad (\emph{i, j}) in each year:
+
+\[
+Net\;Cooperation_{i,j} = \frac{\sum Goldstein_{i \rightarrow j} + \sum Goldstein_{j \rightarrow i}}{2}
+\]
+
+The resulting measure is a continous variable indicating the net
+cooperative/conflictual tone of verbal interactions between the \emph{i,
+j} dyad. Scores lower than 0 indicate a relationship characterized by
+higher levels of verbal conflict such as accusations, demands, or
+threats; scores greater than 0 indicate a relationship characterized by
+cooperative verbal acts such as offers, promises, and statements of
+support. I use this measure as a rough proxy for the underlying tone of
+the (\emph{i, j}) relationship: states that have a greater sense of
+trust or affinity with one another should express this underlying
+relationship fairly consistently over time through their public verbal
+statements. States that view one another as threats or rivals, even when
+they are not actively confronting one another militarily, should
+consistently communicate this hostile relationship in their public
+statements as well.
+
+\subsection{Control variables}\label{control-variables}
+
+To test the robustness of the relationship between low-cost verbal
+interaction and high-cost material cooperation and conflict, I control
+for a range of structural variables that have been repeatedly tested in
+the previous literature. The controls I employ are seen commonly in
+analyses of the Kantian or democratic peace. If I can identify
+statistically significant relationships between my key input and output
+variables in the presence of these factors, I will be more confident
+that these data add to our ability to predict conflict and cooperation
+using constructivist theory.
+
+To control for direct trade ties between states, I include yearly data
+on dyadic trade flows \citep[version 3.0]{Barbieri2009}. These data
+represent the approximate value of trade exports from state i to state j
+in a given year, and are logged to account for the skew present in these
+data due to differences in the size of state economies. I expect that
+increased levels of trade between states, indicating greater economic
+interdependence, to be a negative indicator of high-cost conflict and a
+positive indicator of high-cost cooperation. Shared IGO membership is
+calculated using data collected by \citet{Pevehouse2002}. These data
+measure yearly state-level membership in a set of 495 recorded IGOs from
+1816-2005. Using these state-level data, I calculate the overlap in
+total IGO membership between each pair of states in each year. In line
+with previous literature, I expect that state dyads with higher IGO
+overlap are are less likely to engage in high-cost conflict and more
+likely to engage in high-cost cooperation.
+
+To capture the effects of shared regime, I include a measure of shared
+democracy based on the POLITY IV data set \citep{Marshall2015}, which
+attempts to codify state regimes on a -10 (fully autocratic) to +10
+(fully democratic) scale. This measure is a binary variable indicating
+whether a pair of states are both democracies in a given year, receiving
+a 1 if both states have a POLITY IV score of +7 or higher. This captures
+the core logic of the Kantian peace, focusing on the presence of joint
+democracy in particular. I expect that state dyads with joint democratic
+institutions are less likely to engage in high-cost conflict and more
+likely to engage in high-cost cooperation.
+
+I also include two structural measures that loosely control for cultural
+and material similarities between states. First, I proxy for cultural
+similarity by looking at the difference in religious practice between
+states. To do so, I use the World Religion dataset version 1.1
+\citep{Maoz2013}. Data on the proportion of a state's population that
+follows a given religion are gathered at five-year intervals, and
+disaggregated to yearly measures using linear interpolation. To measure
+the overall level of religious similarity between states, I calculate
+the Euclidean distance from state \emph{i} to state \emph{j} in a
+seven-dimensional space where each dimension corresponds to a state
+population's share of seven major religions: Catholicism, Protestantism,
+Sunni Islam, Shia Islam, Buddhism, Hinduism, and Judaism. States that
+are closer in this multi-dimensional space have similar religious
+distributions in their population, while those that are farther away
+have increasingly different religious profiles. I expect that states
+with more similar religious practices are less likely to engage in
+high-cost conflict, and more likely to engage in high-cost cooperation
+\citep{Corbetta2013}.
+
+Finally, I control for the capability ratio between states i and j using
+yearly National Material Capabilities data version 4.0
+\citep{Singer1987}. This measure loosely captures the material power
+differential in a state dyad. While these metrics are not directly tied
+to the formation of shared identities, they are important to include
+regardless, as material and economic factors still matter. Previous work
+has shown somewhat mixed results as to how capability ratios affect the
+likelihood of conflict, but the bulk of the literature suggests that
+greater power asymmetry tend to decrease the probability of conflict
+between a pair of states \citep[e.g.][]{Organski1980}.
+
+\subsection{High-intensity conflict: dyadic
+MID}\label{high-intensity-conflict-dyadic-mid}
+
+To analyze the relationship between day-to-day interactions and
+militarized disputes, I use the dyadic militarized interstate dispute
+(MID) data version 3.0, created by the Correlates of War project
+\citep{Ghosn2003}. This data set disaggregates a subset of the standard
+MID data set \citep{Palmer2015} between 1993 through 2001 down to
+directed initiator-target dyads. I convert these directed
+initiator-target records to undirected dyads in which the outcome of
+interest for a given dyad-year is the onset (regardless of initiator) of
+a MID between states \emph{i} and \emph{j}. The dyadic MID data are the
+largest limiting factor in the temporal range of data used to test my
+hypotheses, because the overlap between ICEWS and the dyadic MID data is
+quite small (1995 --- 2001). The resulting data set identifies 183
+dyad-years in which a MID occurred.
+
+\subsection{High-intensity cooperation: alliance
+formation}\label{high-intensity-cooperation-alliance-formation}
+
+To analyze the relationship between day-to-day interactions and alliance
+formation, I use the interstate alliance data set version 4.0
+\citep{Gibler2004}. These data record the presence or absence of a
+formal security tie between a pair of states in a given year including
+defense pacts, neutrality pacts, non-aggression pacts, and entente
+agreements, for the years 1946-2012. For this analysis, I treat all
+alliance ties as equivalent. The outcome of interest in this case is
+whether or not states \emph{i} and \emph{j} enter into a formal security
+agreement in a given year. For the six-year period during which I have a
+full set of analysis variables, I observe the formation of 44 new
+alliances.
+
+\subsection{High-intensity conflict and cooperation: civil conflict
+intervention}\label{high-intensity-conflict-and-cooperation-civil-conflict-intervention}
+
+To analyze the relationship between day-to-day interactions and
+third-party intervention in civil conflicts, I use the UCDP External
+Support database \citep{Hoghbladh2011}. These data record the presence
+and type of external intervention into a given civil conflict in a given
+year, along with the identity of the intervener(s). Due to the small
+range of data available to analyze here, I treat all forms of
+intervention as identical. As more data on my other dyadic variables
+becomes available, it would be appropriate to disaggregate by different
+forms of external support: committing troops to another state's fight is
+a more costly and salient act than providing financial aid, for example.
+Here, a given dyad (\emph{i, j}) in which state \emph{j} is experiencing
+a civil conflict is coded as 0 if state \emph{i} took no action; +1 if
+state \emph{i} intervened to support state \emph{j}; or -1 if state
+\emph{i} intervened to support an insurgency in conflict with state
+\emph{j}'s government. In the six-year data window available, I observe
+80 interventions supporting the embattled state, and 91 interventions
+supporting insurgent groups.
+
+\subsection{Data structure: politically relevant
+dyad-years}\label{data-structure-politically-relevant-dyad-years}
+
+Dyad-year analyses of international relations are plagued with issues of
+artificially inflated sample sizes. This is the `Cambodia-Guatemala
+problem': the vast majority of interstate dyads have little reason or
+opportunity to directly engage in significant levels of conflict or
+cooperation with one another, even in an age of increased globalization
+and technological sophistication. Including these non-relevant dyads in
+statistical analyses vastly inflates the available sample size, with two
+effects. First, the number of zeroes in the data set vastly increases,
+distorting the distribution of substantively viable data. Second, due to
+the effects of large sample size on statistical models
+\citep[2]{Head2015}, this makes it more likely that analysis will
+produce statistically significant relationships that have virtually no
+substantive impact, making it easy for scholars to misunderstand or
+overinflate the importance of their findings.
+
+Previous work
+\citetext{\citealp[e.g.][63-65]{Maoz1996}; \citealp[106-107]{Maoz2007}}
+suggests that subsetting the range of data to include only `politically
+relevant' dyads is both theoretically and empirically more appropriate.
+Doing so limits a cross-national dyadic sample to only dyads that are
+(1) geographically proximal, allowing them opportunities for
+interaction, cooperation, and conflict, or (2) involve at least one
+major or regional power with the ability to project economic, military,
+and political presence over greater distance. As has been pointed out in
+previous literature \citep[e.g.][]{Ward2007} explanations of cooperation
+and conflict are not applicable when the states involved simply do not
+interact with one another. Meta-analysis of politically relevant dyads
+shows that limiting the sample to politically relevant dyads may
+introduce slight bias, but ``\ldots{}find little or no evidence that
+such error or bias leads to erroneous estimation''
+\citep[140-141]{Lemke2001}. For the following analyses, I replicate
+\citet[s]{Maoz2007} research design by restricting my sample to only
+dyads that are geographically proximal, or that involve at least one
+major or regional power as defined by the authors However, as a
+robustness check, I also run these analyses on the full state-dyad data
+set (\(N\) = 79,255). In all cases, the relevant coefficients are
+identical in direction and statistical significance. These results are
+available in the Appendix.
+
+The finalized data set includes data on 192 states between 1995 and
+2001. After subsetting the data to only include politically relevant
+dyads, the total number of observations drops to 5,463 dyad-years.
+Summary statistics of these data are shown in Table
+\ref{tab:SummaryStats}, and a full correlation matrix can be found in
+the Appendix.
+
+\begin{table}[!htbp] \centering 
+  \caption{\label{tab:SummaryStats}Summary statistics.} 
+  \label{} 
+\begin{tabular}{@{\extracolsep{5pt}}lcccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+Statistic & \multicolumn{1}{c}{Mean} & \multicolumn{1}{c}{St. Dev.} & \multicolumn{1}{c}{Min} & \multicolumn{1}{c}{Max} \\ 
+\hline \\[-1.8ex] 
+Positive weight & 0.611 & 0.931 & 0.000 & 8.647 \\ 
+Negative weight & 0.690 & 1.775 & 0.000 & 20.157 \\ 
+Log (trade) & 3.931 & 2.813 & 0.000 & 12.202 \\ 
+IGO overlap & 38.968 & 16.204 & 2 & 105 \\ 
+Religious distance & 0.557 & 0.334 & 0.001 & 1.372 \\ 
+Joint democracy & 0.167 & 0.373 & 0 & 1 \\ 
+Relative capacity & 0.860 & 0.148 & 0.500 & 1.000 \\ 
+Alliance formation & 0.010 & 0.100 & 0 & 1 \\ 
+MID onset & 0.032 & 0.177 & 0 & 1 \\ 
+Intervention (state) & 0.013 & 0.113 & 0 & 1 \\ 
+Intervention (rebel) & 0.015 & 0.120 & 0 & 1 \\ 
+\hline \\[-1.8ex] 
+\end{tabular} 
+\end{table}
+
+This data set is unfortunately limited due to data availability along
+both input and output variables. As Figure \ref{fig:DataTimespan} shows,
+the overlap between all variables used in this analysis covers a
+six-year period between 1995 and 2001, with the key bottleneck being the
+limited overlap between the ICEWS data (which only goes back to 1995)
+and the dyadic MID data (which only goes forward to 2001). This is a
+limited sample, making me cautious about over-generalizing any findings.
+At the very least, however, this sample is a useful test case that
+motivates future data-gathering.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{CheapTalkManuscript_files/figure-latex/DataTimespan-1.pdf}
+\caption{\label{fig:DataTimespan}Timespan of available data.}
+\end{figure}
+
+\subsection{Modeling approach}\label{modeling-approach}
+
+To test these hypothesis, I rely on three different variants of logistic
+regression analysis. These data are essentially
+time-series-cross-sectional (TSCS) observations with discrete outcome
+variables (0/1 for MID onset and alliance formation, -1/0/+1 for civil
+conflict intervention). As such, two issues have to be dealt with.
+First, the temporal nature of these data means that endogeneity is a
+potential issue for inferring causal effects. For example, if a MID is
+observed in the same year that two states share a high number of
+low-cost conflictual interactions, it is not clear which preceded which
+--- the MID may be an escalation of low-cost conflict, or the onset of a
+MID may be followed by further acrimonious interactions such as claiming
+victory or placing blame for initiation. Second, TSCS data do not
+fulfill the assumption of independence --- the characteristics of a
+given dyad (i, j) are highly correlated over time.
+
+I deal with endogeneity in the crude but common fashion of lagging all
+independent variables by one year. This removes the possibility that a
+correlation between input and output variables is a result of the output
+`causing' the input. It also raises the bar of difficulty for testing my
+hypotheses, in that it implicitly assumes that the relationships
+signaled by low-cost verbal interactions are stable over time ---- in
+other words, that last year's cooperation and conflict on minor issues
+captures an underlying relationship that affects the likelihood of
+cooperation and conflict on major issues this year.
+
+I also include yearly fixed effects to control for the effects of time.
+\citet[1283-1284]{Beck1998} point out that including non-parametric
+temporal effects in the form of splines are an effective approach for
+TSCS data. Given the six-year temporal span of my data, however, splines
+and other transformations are unlikely to be helpful. Instead, I include
+yearly fixed effects to allow the probability of any given outcome to
+vary as a result of time\footnote{I recognize that at least for modeling
+  MID onset, a hazard model is empirically and theoretically more
+  appropriate \citep[see][ for a detailed
+  discussion]{Box-Steffensmeir2004}. I use logistic regression for two
+  reasons. First, while hazard analysis is more appropriate for MIDs, it
+  is more difficult to apply and interpret for outcomes subject to
+  selection effects (alliances) or for interrupted or irregular
+  observation windows (civil conflict interventions). To make it easier
+  to compare model results, I use different variants of logistic
+  regression for all three tests. Second, logistic regression with
+  temporal controls generally produces results that are very similar to
+  hazard analysis, reducing the worry that I am biasing or mis-modeling
+  these processes. As a robustness check, however, I run a set of Cox
+  proportional-hazard models on the MIDs data, and show the results ---
+  which are identical in direction and significance --- in the Appendix.}.
+
+\subsubsection{Modeling approach: dyadic
+MID}\label{modeling-approach-dyadic-mid}
+
+To model the likelihood of a MID in a given year as a function of
+low-intensity cooperation and conflict in the previous year, I employ
+logistic regression with fixed effects for time.
+
+\subsubsection{Modeling approach: alliance
+formation}\label{modeling-approach-alliance-formation}
+
+Modeling alliance formation is a bit more complicated for two related
+reasons. First, alliances tend to be durable over time. This means that
+alliances are more akin to phase changes than the discrete/repeatable
+events we usually model with logistic regression. Second, the window of
+observation is small and historically recent. Taken together, this means
+that many of the state dyads most likely to form both trust-based
+relationships and alliances already have done so over the previous
+decades or centuries ---- which in turn means that they are unlikely to
+form new alliances during the window of analysis I have available.
+
+To deal with this issue, I treat the prior presence of an alliance as a
+selection effect. To model the likelihood of two states joining in an
+alliance, I have to first model the probability that they have
+\emph{not} done so prior to entering the pool of data being analyzed ---
+in other words, identifying state dyads that could potentially form a
+new alliance, given that they have not done so already. I do this
+through a two-stage Heckman selection model \citep{Heckman1977}: the
+first (selection) stage estimates the likelihood that two states
+\emph{do not} have an alliance prior to 1995, and the second (outcome)
+stage estimates the probability that two states will form a new
+alliance, given that they have not already.
+
+The functional form of the first (selection) stage is a probit
+regression identifying state dyads that do not already have an alliance.
+Dyads with no alliance present are selected into the second stage of the
+model, which uses logistic regression to estimate the probability that
+they will form a new alliance.
+
+\subsubsection{Modeling approach: civil conflict
+intervention}\label{modeling-approach-civil-conflict-intervention}
+
+To model the likelihood of a given state \emph{i} intervening in another
+state \emph{j}'s ongoing civil conflict, I employ multinomial logistic
+regression. This allows me to estimate the probability of a given action
+by state \emph{i} (support government or support insurgents) relative to
+the baseline outcome of doing nothing. For this analysis, I restrict the
+sample to only dyad-years in which state \emph{j} is experiencing an
+ongoing civil conflict: this is because intervening in another state's
+conflict is (obviously) impossible when that state is not experiencing a
+conflict to begin with. The resulting data set consists of 908
+politically relevant dyad-years in which at least one state in a dyad is
+experiencing a civil conflict.
+
+\subsubsection{Testing robustness: out-of-sample
+prediction}\label{testing-robustness-out-of-sample-prediction}
+
+Statistical analysis in political science comes under criticism for two
+reasons. First, coefficient estimates are often presented as `important'
+simply because they meet some standard of statistical significance,
+usually \(p < 0.05\), with little discussion of \emph{substantive}
+significance: whether realistic changes in those variables would
+actually lead to significantly different predictions
+\citep[2]{Head2015}. Second, and often related, is the accusation that
+statistical models over-fit the data, producing estimates that are
+well-suited for explaining existing patterns but virtually useless for
+predicting or explaining new data \citep[597]{Ward2007}.
+
+To deal with these issues, I engage in out-of-sample (OOS) testing in
+each set of models. OOS modeling trains a model on a subset of the data,
+holding a portion `untouched' during the training process. Then, the
+trained model is used to make predictions on the untouched data, and
+these predictions are compared with the observed outcomes. This approach
+lets me gauge whether the estimates produced are robust to over-fitting
+and are potentially useful for future predictions.
+
+If the variables I propose are empirically useful, then they will (1)
+show statistically significant correlations with the outcome of interest
+in the training stage of the model, and (2) improve the predictive power
+of the model when faced with new data. Each model is trained on a random
+subset of 70\% of observations, with 30\% held back for testing.
+
+\section{Results and discussion}\label{results-and-discussion}
+
+\subsection{Results: dyadic MID onset}\label{results-dyadic-mid-onset}
+
+Hypothesis 1 is strongly supported. I find that there is a statistically
+significant, positive relationship between low-cost verbal interactions
+between states and the onset of a MID. Table \ref{tab:MidTable} shows
+the results of a set of logistic regression models. Model 1 provides a
+baseline, including a set of functionalist variables identified as
+important in the majority of IR literature. Model 2 introduces a set of
+structural controls identified in the Kantian peace literature. Model 3
+introduces the event-based measure of net verbal cooperation.
+
+\begin{table}[!htbp] \centering 
+  \caption{\label{tab:MidTable}Results: dyadic MID onset.} 
+  \label{} 
+\begin{tabular}{@{\extracolsep{5pt}}lccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & \multicolumn{3}{c}{\textit{Dependent variable:}} \\ 
+\cline{2-4} 
+\\[-1.8ex] & \multicolumn{3}{c}{Dyadic MID onset} \\ 
+ & 1 & 2 & 3 \\ 
+\hline \\[-1.8ex] 
+ Net cooperation &  &  & $-$0.26$^{***}$ \\ 
+  &  &  & (0.03) \\ 
+  & & & \\ 
+ Alliance & 0.48$^{**}$ & 0.65$^{***}$ & 0.53$^{**}$ \\ 
+  & (0.21) & (0.23) & (0.24) \\ 
+  & & & \\ 
+ Logged trade & $-$0.08$^{**}$ & 0.01 & 0.02 \\ 
+  & (0.04) & (0.04) & (0.04) \\ 
+  & & & \\ 
+ IGO overlap &  & $-$0.02$^{**}$ & $-$0.02$^{*}$ \\ 
+  &  & (0.01) & (0.01) \\ 
+  & & & \\ 
+ Religious dist. &  & $-$0.39 & $-$0.57$^{*}$ \\ 
+  &  & (0.29) & (0.30) \\ 
+  & & & \\ 
+ Joint democracy &  & $-$1.24$^{**}$ & $-$1.23$^{**}$ \\ 
+  &  & (0.49) & (0.50) \\ 
+  & & & \\ 
+ Relative capacity & $-$2.35$^{***}$ & $-$2.77$^{***}$ & $-$2.77$^{***}$ \\ 
+  & (0.61) & (0.65) & (0.66) \\ 
+  & & & \\ 
+ Previous MIDs & 1.36$^{***}$ & 1.32$^{***}$ & 1.19$^{***}$ \\ 
+  & (0.12) & (0.12) & (0.13) \\ 
+  & & & \\ 
+ Constant & $-$1.18$^{**}$ & $-$0.21 & $-$0.28 \\ 
+  & (0.54) & (0.70) & (0.70) \\ 
+  & & & \\ 
+\hline \\[-1.8ex] 
+Observations & 3,801 & 3,801 & 3,801 \\ 
+Log Likelihood & $-$474.11 & $-$465.68 & $-$440.76 \\ 
+Akaike Inf. Crit. & 968.23 & 957.37 & 909.52 \\ 
+\hline 
+\hline \\[-1.8ex] 
+\textit{Note:}  & \multicolumn{3}{r}{$^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01} \\ 
+ & \multicolumn{3}{r}{Yearly fixed effects not shown.} \\ 
+\end{tabular} 
+\end{table}
+
+Model 3 shows that increased levels of verbal cooperation in a given
+year are associated with a lower chance of MID onset in the following
+year. This effect is both substantively and statistically significant.
+Calculating predicted probabilities quantifies this effect more
+directly: moving from the 5\% quantile to the 95\% quantile along the
+net-cooperation variable, holding all other factors constant, decreases
+the likelihood of MID onset by about 33\% (0.03 to 0.02) in a given
+year. While a difference of 1\% is not very large, consider that (1)
+MIDs are extremely rare events even between politically relevant dyads,
+and (2) the effects of verbal cooperation are both substantively and
+statistically more significant than those of dyadic trade, IGO
+membership, and religious distance. This is a strong indication that the
+measure of net verbal cooperation I create is capturing real variation.
+
+It is worth noting that, at least for the sample analyzed here, few of
+the control variables suggested by the literature attain statistical
+significance after measures of low-cost verbal interaction are included.
+The presence of an alliance, levels of dyadic trade, overlapping IGO
+membership, and religious similarity all show inconclusive relationships
+with MID onset. Joint democracy, relative capacity, and the presence of
+previous militarized disputes all remain significant, and in the
+directions expected by the literature: dyads that share democratic
+institutions are less likely to experience a MID, while those that have
+a history of conflict or have similar material capability are more
+likely to experience a MID.
+
+For the training data, I find that net cooperation plays an important
+role in predicting MID onset. However, it is also important to assess
+whether this measure still improves explanatory power when faced with
+new data. To do so, I use Models 1 through 3 to predict MID onset using
+the 30\% of observations held back from the training step. Testing model
+fit on these untouched data shows that, for both in-sample and
+out-of-sample data, including measures of low-cost verbal cooperation
+and conflict increases model fit when predicting MID onset\footnote{More
+  recent work suggests that the effects of both alliances and trade ties
+  may be more complex than this dyadic research design might suggest
+  \citep[e.g.][]{Oneal2003, Maoz2007}. Future work could expand on this
+  dyadic approach, embedding states in networks of interaction that may
+  pick up on indirect dependencies.}. To compare how well each model did
+in predicting the outcome of interest on the testing data, I measure the
+area under the ROC curve (AUC), a commonly used measure of model fit
+that assesses how well a model balances between true-positive and
+false-positive predictions \citep{Hanley1982}. Values closer to 1
+indicate better model fit, while values closer to 0.5 signal a model on
+par with random guessing. Model 2, which omits low-intensity
+interactions, scores 0.82 on in-sample and 0.77 on out-of-sample
+prediction. The fully specified Model 6 improves on this significantly,
+scoring 0.86 on in-sample and 0.81 on out-of-sample prediction. Not only
+does the fully-specified model fit the training data better, but it
+significantly improves predictive accuracy when used on new data. This
+provides strong support for the validity of using these data to predict
+militarized interstate disputes.
+
+\subsection{Results: alliance
+formation}\label{results-alliance-formation}
+
+Hypothesis 2, on the other hand, finds little support. The Heckman
+selection models presented in Tables \ref{tab:AllyTableSelect} and
+\ref{tab:AllyTableOutcome} predict as a first stage whether two states
+did \emph{not} share an alliance in 1995, the first year in the data
+pool. The second stage of the model predicts whether two states, given
+that they did not share an alliance previously, form a new alliance in a
+given year. In this second stage, net verbal cooperation has no
+significant effect on alliance formation.
+
+\newpage
+
+\begin{table}[!htbp] \centering 
+  \caption{\label{tab:AllyTableSelect}Selection stage: absence of alliance.} 
+  \label{} 
+\begin{tabular}{@{\extracolsep{5pt}}lccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & \multicolumn{3}{c}{\textit{Dependent variable:}} \\ 
+\cline{2-4} 
+\\[-1.8ex] & \multicolumn{3}{c}{Absence of alliance} \\ 
+\hline \\[-1.8ex] 
+ Logged trade & $-$0.17$^{***}$ & $-$0.05$^{***}$ & $-$0.05$^{***}$ \\ 
+  & (0.01) & (0.01) & (0.01) \\ 
+  & & & \\ 
+ IGO overlap &  & $-$0.05$^{***}$ & $-$0.05$^{***}$ \\ 
+  &  & (0.002) & (0.002) \\ 
+  & & & \\ 
+ Religious dist. &  & 0.79$^{***}$ & 0.79$^{***}$ \\ 
+  &  & (0.08) & (0.08) \\ 
+  & & & \\ 
+ Joint democracy &  & 0.51$^{***}$ & 0.51$^{***}$ \\ 
+  &  & (0.08) & (0.08) \\ 
+  & & & \\ 
+ Relative capacity & 2.07$^{***}$ & 0.42$^{**}$ & 0.42$^{**}$ \\ 
+  & (0.16) & (0.20) & (0.20) \\ 
+  & & & \\ 
+ Constant & $-$0.26$^{*}$ & 2.15$^{***}$ & 2.15$^{***}$ \\ 
+  & (0.14) & (0.21) & (0.21) \\ 
+  & & & \\ 
+\hline \\[-1.8ex] 
+ & 3 & 4 & 5 \\ 
+Observations & 3,801 & 3,801 & 3,801 \\ 
+Log Likelihood & 1,052.73 & 1,384.29 & 1,385.79 \\ 
+$\rho$ & $-$0.001  (0.08) & 0.003  (0.05) & 0.003  (0.05) \\ 
+\hline 
+\hline \\[-1.8ex] 
+\textit{Note:}  & \multicolumn{3}{r}{$^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01} \\ 
+ & \multicolumn{3}{r}{Yearly fixed effects not shown.} \\ 
+\end{tabular} 
+\end{table}
+
+\newpage
+
+\begin{table}[!htbp] \centering 
+  \caption{\label{tab:AllyTableOutcome}Outcome stage: alliance formation.} 
+  \label{} 
+\begin{tabular}{@{\extracolsep{5pt}}lccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & \multicolumn{3}{c}{\textit{Dependent variable:}} \\ 
+\cline{2-4} 
+\\[-1.8ex] & \multicolumn{3}{c}{Alliance formation} \\ 
+ & 3 & 4 & 5 \\ 
+\hline \\[-1.8ex] 
+ Net cooperation &  &  & $-$0.002$^{*}$ \\ 
+  &  &  & (0.001) \\ 
+  & & & \\ 
+ Previous MIDs & 0.005 & 0.004 & 0.002 \\ 
+  & (0.005) & (0.005) & (0.005) \\ 
+  & & & \\ 
+ IGO overlap &  & 0.0004$^{**}$ & 0.0004$^{**}$ \\ 
+  &  & (0.0002) & (0.0002) \\ 
+  & & & \\ 
+ Religious dist. &  & $-$0.02$^{***}$ & $-$0.02$^{***}$ \\ 
+  &  & (0.01) & (0.01) \\ 
+  & & & \\ 
+ Joint democracy &  & 0.01$^{*}$ & 0.01$^{*}$ \\ 
+  &  & (0.01) & (0.01) \\ 
+  & & & \\ 
+ Logged trade & 0.001 & $-$0.001 & $-$0.001 \\ 
+  & (0.001) & (0.001) & (0.001) \\ 
+  & & & \\ 
+ Relative capacity & $-$0.02 & $-$0.01 & $-$0.01 \\ 
+  & (0.01) & (0.01) & (0.01) \\ 
+  & & & \\ 
+ Constant & 0.02 & 0.02 & 0.02 \\ 
+  & (0.01) & (0.02) & (0.02) \\ 
+  & & & \\ 
+\hline \\[-1.8ex] 
+Observations & 3,801 & 3,801 & 3,801 \\ 
+Log Likelihood & 1,052.73 & 1,384.29 & 1,385.79 \\ 
+$\rho$ & $-$0.001  (0.08) & 0.003  (0.05) & 0.003  (0.05) \\ 
+\hline 
+\hline \\[-1.8ex] 
+\textit{Note:}  & \multicolumn{3}{r}{$^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01} \\ 
+ & \multicolumn{3}{r}{Yearly fixed effects not shown.} \\ 
+\end{tabular} 
+\end{table}
+
+In the selection stage, IGO overlap, trade flows, and religious
+proximity have the expected effects: states that share membership in
+more IGOs, trade more, and have similar religious populations are more
+likely to share an alliance when they enter the sample pool. Oddly,
+joint democracy has the opposite effect: the coefficient on joint
+democracy is significant and positive, indicating that democratic dyads
+were actually slightly \emph{less} likely to share an alliance entering
+the sample pool.
+
+In the outcome stage, only IGO overlap and trade flows reach
+conventional levels of significance, and both show very small
+substantive effects. Dyads that share membership in more IGOs and have
+more similar religious populations are slightly more likely to form
+alliances, given that they had not already done so by 1995. These
+effects are again in the expected direction. Joint democracy has a small
+positive effect, but this is significant only at the \(p < 0.10\) level.
+Net verbal cooperation has little appreciable effect on the likelihood
+of two states forming an alliance: the coefficent sign is negative (the
+opposite of the expected direction), fails to reach the \(p < 0.05\)
+threshold of significance, and is substantively extremely small.
+
+Unsurprisingly given these issues, including net verbal cooperation does
+not appreciably increase out-of-sample predictive capability. Compared
+to the structural Model 5, the fully specified Model 6 shows no increase
+in model fit as measured in AUC score: both models score 0.84 on
+in-sample data and 0.71 on out-of-sample data. This provides further
+evidence that, at least in this modeling approach, net verbal
+cooperation has little effect on the likelihood of alliance formation.
+The lack of support for Hypothesis 2 may be a function of the limited
+data available. The number of politically relevant dyads that formed
+alliances in this period is very small (n = 44, or about 0.8\% of
+cases), making it difficult to form robust predictions. Additionally,
+the selection modeling approach may not be enough to properly account
+for the fact that most `friendly' state dyads already had alliances
+during this time period. With more temporal coverage, it would be
+possible to engage in a more intensive test of this hypothesis.
+
+Despite the failure to support Hypothesis 2, a simple \(t\)-test
+provides some support for the idea that verbal cooperation and alliances
+generally go together. States that are allied share significantly higher
+levels of low-intensity cooperation (mean = 1.12) compared to states
+that do not share an alliance (mean = 0.73), an increase difference of
+over 50\%. This does not speak to the causal effects of alliance and
+low-intensity cooperation, but it does suggest that the two forms of
+cooperation co-vary with one another. Further data gathering and
+analysis may shed more light on the details of this relationship.
+
+\subsection{Results: civil conflict
+intervention}\label{results-civil-conflict-intervention}
+
+I find strong support for Hypotheses 3a and 3b, as shown in Table
+\ref{tab:InterTable}.
+
+\newpage
+
+\begin{landscape}
+
+\begin{table}[!htbp] \centering 
+  \caption{\label{tab:InterTable}Model results: civil conflict intervention.} 
+  \label{} 
+\begin{tabular}{@{\extracolsep{5pt}}lcccccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & \multicolumn{6}{c}{\textit{Dependent variable:}} \\ 
+\cline{2-7} 
+\\[-1.8ex] & Conflict intervention (+1 = state, -1 = rebels) & 1 & -1 & 1 & -1 & 1 \\ 
+ & 6 & 6 & 7 & 7 & 8 & 8 \\ 
+\hline \\[-1.8ex] 
+ Net cooperation &  &  &  &  & $-$0.25$^{***}$ & 0.49$^{***}$ \\ 
+  &  &  &  &  & (0.04) & (0.09) \\ 
+  & & & & & & \\ 
+ Alliance & 0.23 & 1.24$^{*}$ & $-$0.25 & 1.64$^{***}$ & $-$0.54$^{**}$ & 1.43$^{***}$ \\ 
+  & (0.59) & (0.65) & (0.24) & (0.28) & (0.26) & (0.29) \\ 
+  & & & & & & \\ 
+ Logged trade & $-$0.29$^{***}$ & 0.54$^{***}$ & $-$0.22$^{***}$ & 0.19$^{***}$ & $-$0.16$^{***}$ & 0.25$^{***}$ \\ 
+  & (0.10) & (0.10) & (0.04) & (0.04) & (0.04) & (0.04) \\ 
+  & & & & & & \\ 
+ IGO overlap &  &  & 0.04$^{***}$ & 0.19$^{***}$ & 0.04$^{***}$ & 0.18$^{***}$ \\ 
+  &  &  & (0.01) & (0.02) & (0.01) & (0.02) \\ 
+  & & & & & & \\ 
+ Religious dist. &  &  & $-$0.74$^{***}$ & $-$0.51$^{*}$ & $-$0.95$^{***}$ & $-$0.57$^{**}$ \\ 
+  &  &  & (0.22) & (0.27) & (0.23) & (0.28) \\ 
+  & & & & & & \\ 
+ Joint democracy &  &  & $-$14.22$^{***}$ & $-$0.62$^{*}$ & $-$8.17$^{***}$ & $-$0.60$^{*}$ \\ 
+  &  &  & (0.0000) & (0.32) & (0.001) & (0.33) \\ 
+  & & & & & & \\ 
+ Relative capacity & $-$2.71$^{**}$ & 14.21$^{***}$ & $-$2.08$^{***}$ & 24.92$^{***}$ & $-$1.14$^{*}$ & 25.02$^{***}$ \\ 
+  & (1.20) & (3.48) & (0.63) & (1.60) & (0.64) & (1.67) \\ 
+  & & & & & & \\ 
+ Previous MIDs & 0.93$^{***}$ & 0.73 & 1.38$^{***}$ & 1.84$^{***}$ & 1.52$^{***}$ & 2.40$^{***}$ \\ 
+  & (0.26) & (0.79) & (0.16) & (0.24) & (0.17) & (0.25) \\ 
+  & & & & & & \\ 
+ Constant & 0.42 & $-$18.29$^{***}$ & 2.00$^{***}$ & $-$28.20$^{***}$ & 1.14 & $-$29.03$^{***}$ \\ 
+  & (1.01) & (3.54) & (0.76) & (1.90) & (0.76) & (2.00) \\ 
+  & & & & & & \\ 
+\hline \\[-1.8ex] 
+Akaike Inf. Crit. & 437.26 & 437.26 & 2,780.91 & 2,780.91 & 2,651.72 & 2,651.72 \\ 
+\hline 
+\hline \\[-1.8ex] 
+\textit{Note:}  & \multicolumn{6}{r}{$^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01} \\ 
+ & \multicolumn{6}{r}{Yearly fixed effects not shown.} \\ 
+\end{tabular} 
+\end{table} 
+\end{landscape}
+
+When a state experiences a civil conflict, the propensity of other
+states to act, and the form this action takes, is affected significantly
+by the nature of the relationship between the conflict state and the
+(potential) intervenor. States that share a cooperative relationship
+are, compared to the baseline of `doing nothing', less likely to provide
+support to insurgents in an ongoing conflict, and more likely to
+intervene to support the government of the conflict state. Verbal
+signals of friendship and enmity seem to be backed up consistently by
+more costly actions of support or opposition, given the opportunity.
+
+The majority of control variables find support here as well, and in the
+directions I would anticipate, with a few interesting exceptions. First,
+joint democracies tend to stay out of each others' business: democracies
+virtually never intervene to support insurgents, but are not necessarily
+more likely to support one another directly during civil conflict.
+Second, states with more similar religious populations are more likely
+to support insurgents in one another's civil conflicts. This may be due
+to irredentist conflicts: groups that are similar in population across
+two states, but discriminated against in one, may agitate for
+intervention to support their fellows during a religious civil conflict.
+Finally, state dyads that share a history of militarized conflict are
+more likely to intervene on either the side of the insurgent or the
+government.
+
+Having found statistical evidence that verbal interaction indicates the
+likelihood and form of conflict intervention, I use the same
+in-sample/out-of-sample approach to test whether the inclusion of this
+new variable actually improves predictive capability. Since AUC
+statistics do not translate readily to multi-outcome models, I instead
+present confusion matrices for the structural Model 7 and the
+fully-specified Model 8 in Tables \ref{tab:ConfMatStruct} and
+\ref{tab:ConfMatFull}. These matrices show the predicted veresus
+observed outcomes from each model. Higher values on the diagonal
+indicate better model fit, as more observed values are accurately
+predicted.
+
+Including measures of low-cost verbal cooperation and conflict improves
+model fit on the in-sample data as well as predictive accuracy on the
+out-of-sample data. These measures improve accuracy mostly by increasing
+the model's ability to correctly identify non-intervention cases while
+still accurately classifying cooperative and conflictual intervention,
+reducing the number of false-positive predictions where no actual
+intervention occurs. The structural model predicts civil conflict
+interventions with 39\% accuracy, while the fully specified model
+increases predictive accuracy to 45\%. This increases my confidence that
+including verbal interactions in models of conflict and cooperation has
+real effects in improving our predictive capability.
+
+\newpage
+
+\begin{centering}
+\captionof{table}{Confusion matrix, structural model.}
+\begin{tabularx}{\textwidth}{c|c c c |}
+\label{tab:ConfMatStruct}
+ & No action & Support ins. & Support state \\
+\hhline{----}
+No action & 65 \cellcolor[gray]{.8} & 84 & 54  \\
+Support ins. & 0 & 16 \cellcolor[gray]{.8} & 0  \\
+Support state & 2 & 2 & 9 \cellcolor[gray]{.8} \\
+\hhline{~---}
+\end{tabularx}
+
+
+\captionof{table}{Confusion matrix, full model.}
+\begin{tabularx}{\textwidth}{c|c c c |}
+\label{tab:ConfMatFull}
+ & No action & Support ins. & Support state \\
+\hhline{----}
+No action & 80 \cellcolor[gray]{.8} & 74 & 49  \\
+Support ins. & 0 & 15 \cellcolor[gray]{.8} & 1  \\
+Support state & 2 & 2 & 9 \cellcolor[gray]{.8} \\
+\hhline{~---}
+\end{tabularx}
+
+\end{centering}
+
+\section{Conclusions}\label{conclusions}
+
+Cheap talk -- at least in routine day-to-day interactions -- is a useful
+predictor of costly action. Fundamentally, much of what we do as
+scholars of international relations boils down to identifying and
+explaining `friendship' and `enmity' between states. Events data provide
+an interesting way to gauge these relationships and model how they
+evolve over time. Repeated low-cost acts of verbal cooperation or
+conflict over time can stabilize interstate relationships, normalizing
+trust or distrust between a pair of states. I find that the tone of
+offers, accusations, promises, and so on between a pair of states is a
+useful proxy for the underlying level of trust or distrust in that
+relationship. While my current findings are much stronger for military
+matters -- MIDs and external support for civil war -- I suspect that the
+weakness of my results in explaining alliance formation is largely a
+function of low data availability. For MIDs and conflict intervention,
+my findings are robust to (1) a set of well-established control
+variables; (2) subsetting the input data by politically relevant dyads,
+as well as the global sample; and (3) predicting outcomes on held-back
+testing data. Overall, my findings suggest two things.
+
+First, these findings support constructivist theory that treats
+interaction and identity as mutually constitutive: states that cooperate
+in minor day-to-day interactions build positive mutual identities over
+time. These underlying cooperative or acrimonious relationships affect
+the likelihood of high-cost material forms of conflict and cooperation.
+The type and tone of verbal interactions do not have a direct
+constraining effect on state behavior in the short run, but rather (1)
+signal some underlying level of trust or distrust between states, and
+(2) assist in the construction of identities and norms over longer time
+periods, strengthening these underlying relationships. These results
+provide evidence that integrating short-term events data with
+longer-term structural characteristics of states can strengthen our
+understanding of how interstate relationships evolve over time.
+
+Second, these findings open up a range of interesting future research
+questions, particularly in examining the endogenous effects of formal
+institutions. The analysis I show here does not try to explain the
+\emph{reasons} that some interstate relationships evolve towards
+friendship over decades or centuries, while others evolve towards
+enmity. This is largely a limitation of data availability: with a
+six-year window of analysis, it is difficult to make claims about how
+long-term path dependency emerges over time. However, this is an
+interesting question with major implications about the long-term role of
+structure versus agency in determining patterns of interstate
+cooperation and conflict. With more data, it would be possible --
+particularly for newer states -- to gauge how their \emph{de facto}
+foreign policy evolves in conjunction with their membership in formal
+institutions, their trade ties with other states, their security
+relationships, and so on. Event data can help paint a much more complete
+picture of how states interact with one another.
+
+Do formal institutions create opportunities for low-intensity
+cooperation, or do states that already cooperate form institutions with
+one another? Being able to measure the `ground state' of day-to-day,
+low-cost interactions between states may provide useful leverage in
+analyzing what the causal effects of formal ties such as institutions,
+trade, and alliances are in promoting shared ideals, identities, and
+friendships between states. It makes sense that there is a mutually
+reinforcing cycle in which the existence of structural similarities and
+institutional bonds can cause, and be caused by, underlying levels of
+friendship and enmity between states. This indicates a need for further
+study of the available data, as well as increased data-collection
+efforts in the future.
+
+\section{Appendix}\label{appendix}
+
+\subsection{Variable correlation
+matrix}\label{variable-correlation-matrix}
+
+\begin{tabular}{l|r|r|r|r|r|r|r}
+\hline
+  & NetCoop & Alliance & Trade & IGO & ReligDist & JointDem & RelCap\\
+\hline
+NetCoop & 1.00 & -0.01 & -0.08 & -0.02 & -0.07 & 0.00 & 0.04\\
+\hline
+Alliance & -0.01 & 1.00 & 0.20 & 0.50 & -0.24 & 0.21 & -0.18\\
+\hline
+Trade & -0.08 & 0.20 & 1.00 & 0.32 & -0.03 & 0.30 & -0.07\\
+\hline
+IGO & -0.02 & 0.50 & 0.32 & 1.00 & -0.17 & 0.52 & -0.34\\
+\hline
+ReligDist & -0.07 & -0.24 & -0.03 & -0.17 & 1.00 & -0.08 & 0.04\\
+\hline
+JointDem & 0.00 & 0.21 & 0.30 & 0.52 & -0.08 & 1.00 & -0.01\\
+\hline
+RelCap & 0.04 & -0.18 & -0.07 & -0.34 & 0.04 & -0.01 & 1.00\\
+\hline
+\end{tabular}
+
+\subsection{Robustness check: logit models, all
+dyad-years}\label{robustness-check-logit-models-all-dyad-years}
+
+Presented below are a set of models identical to those in the main
+manuscript, but employing all dyad-years instead of only those specified
+as `politically relevant'. In all cases, the sign and statistical
+significance of the key verbal-cooperation variable is identical to the
+models presented previously.
+
+\subsubsection{MID onset}\label{mid-onset}
+
+\begin{table}[!htbp] \centering 
+  \caption{\label{tab:MidTable}Dyadic MID onset, all dyads.} 
+  \label{} 
+\begin{tabular}{@{\extracolsep{5pt}}lccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & \multicolumn{3}{c}{\textit{Dependent variable:}} \\ 
+\cline{2-4} 
+\\[-1.8ex] & \multicolumn{3}{c}{Dyadic MID onset} \\ 
+ & 1 & 2 & 3 \\ 
+\hline \\[-1.8ex] 
+ Net cooperation &  &  & $-$0.34$^{***}$ \\ 
+  &  &  & (0.04) \\ 
+  & & & \\ 
+ Alliance & 0.97$^{***}$ & 0.98$^{***}$ & 0.88$^{***}$ \\ 
+  & (0.18) & (0.22) & (0.22) \\ 
+  & & & \\ 
+ Logged trade & 0.18$^{***}$ & 0.28$^{***}$ & 0.25$^{***}$ \\ 
+  & (0.03) & (0.03) & (0.03) \\ 
+  & & & \\ 
+ IGO overlap &  & $-$0.01 & $-$0.01 \\ 
+  &  & (0.01) & (0.01) \\ 
+  & & & \\ 
+ Religious dist. &  & $-$0.89$^{***}$ & $-$0.93$^{***}$ \\ 
+  &  & (0.23) & (0.23) \\ 
+  & & & \\ 
+ Joint democracy &  & $-$2.20$^{***}$ & $-$2.06$^{***}$ \\ 
+  &  & (0.44) & (0.44) \\ 
+  & & & \\ 
+ Relative capacity & $-$1.61$^{***}$ & $-$1.76$^{***}$ & $-$1.92$^{***}$ \\ 
+  & (0.49) & (0.49) & (0.50) \\ 
+  & & & \\ 
+ Previous MIDs & 2.22$^{***}$ & 2.08$^{***}$ & 1.89$^{***}$ \\ 
+  & (0.12) & (0.12) & (0.12) \\ 
+  & & & \\ 
+ Constant & $-$4.90$^{***}$ & $-$4.01$^{***}$ & $-$3.95$^{***}$ \\ 
+  & (0.42) & (0.50) & (0.51) \\ 
+  & & & \\ 
+\hline \\[-1.8ex] 
+Observations & 55,453 & 55,453 & 55,453 \\ 
+Log Likelihood & $-$1,093.57 & $-$1,061.25 & $-$1,032.60 \\ 
+Akaike Inf. Crit. & 2,207.15 & 2,148.50 & 2,093.20 \\ 
+\hline 
+\hline \\[-1.8ex] 
+\textit{Note:}  & \multicolumn{3}{r}{$^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01} \\ 
+ & \multicolumn{3}{r}{Yearly fixed effects not shown.} \\ 
+\end{tabular} 
+\end{table}
+
+\newpage
+
+\begin{table}[!htbp] \centering 
+  \caption{\label{tab:AllySelectionAllDyads}Selection stage: absence of alliance, all dyads.} 
+  \label{} 
+\begin{tabular}{@{\extracolsep{5pt}}lccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & \multicolumn{3}{c}{\textit{Dependent variable:}} \\ 
+\cline{2-4} 
+\\[-1.8ex] & \multicolumn{3}{c}{Absence of alliance} \\ 
+\hline \\[-1.8ex] 
+ Logged trade & $-$0.14 & 0.01 & 0.01 \\ 
+  & (Inf.00) & (Inf.00) & (0.01) \\ 
+  & & & \\ 
+ IGO overlap &  & $-$0.01 & $-$0.01$^{***}$ \\ 
+  &  & (Inf.00) & (0.001) \\ 
+  & & & \\ 
+ Religious dist. &  & 0.04 & 0.04 \\ 
+  &  & (Inf.00) & (0.06) \\ 
+  & & & \\ 
+ Joint democracy &  & 0.12 & 0.12$^{**}$ \\ 
+  &  & (Inf.00) & (0.05) \\ 
+  & & & \\ 
+ Relative capacity & 0.55 & $-$0.09 & $-$0.10 \\ 
+  & (Inf.00) & (Inf.00) & (0.08) \\ 
+  & & & \\ 
+ Constant & 1.03 & 0.32 & 0.35$^{***}$ \\ 
+  & (Inf.00) & (Inf.00) & (0.12) \\ 
+  & & & \\ 
+\hline \\[-1.8ex] 
+Observations & 55,453 & 55,453 & 55,453 \\ 
+Log Likelihood & 89,284.21 & 94,474.03 & 94,458.26 \\ 
+$\rho$ & 1.00  (Inf.00) & 1.00  (Inf.00) & 1.00 \\ 
+\hline 
+\hline \\[-1.8ex] 
+\textit{Note:}  & \multicolumn{3}{r}{$^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01} \\ 
+ & \multicolumn{3}{r}{Yearly fixed effects not shown.} \\ 
+\end{tabular} 
+\end{table}
+
+\begin{table}[!htbp] \centering 
+  \caption{\label{tab:AllyOutcomeAllDyads}Outcome stage: alliance formation, all dyads.} 
+  \label{} 
+\begin{tabular}{@{\extracolsep{5pt}}lccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & \multicolumn{3}{c}{\textit{Dependent variable:}} \\ 
+\cline{2-4} 
+\\[-1.8ex] & \multicolumn{3}{c}{Alliance formation} \\ 
+ & 3 & 4 & 5 \\ 
+\hline \\[-1.8ex] 
+ Net cooperation &  &  & $-$0.0001 \\ 
+  &  &  & (0.0001) \\ 
+  & & & \\ 
+ Previous MIDs & 0.003 & 0.0000 & 0.0001 \\ 
+  & (Inf.00) & (Inf.00) & (0.0003) \\ 
+  & & & \\ 
+ IGO overlap &  & $-$0.0002 & $-$0.0002$^{***}$ \\ 
+  &  & (Inf.00) & (0.0000) \\ 
+  & & & \\ 
+ Religious dist. &  & 0.001 & 0.001 \\ 
+  &  & (Inf.00) & (0.0005) \\ 
+  & & & \\ 
+ Joint democracy &  & 0.004 & 0.004$^{***}$ \\ 
+  &  & (Inf.00) & (0.001) \\ 
+  & & & \\ 
+ Logged trade & $-$0.001 & 0.0003 & 0.0003$^{***}$ \\ 
+  & (Inf.00) & (Inf.00) & (0.0001) \\ 
+  & & & \\ 
+ Relative capacity & 0.002 & $-$0.003 & $-$0.002$^{**}$ \\ 
+  & (Inf.00) & (Inf.00) & (0.001) \\ 
+  & & & \\ 
+ Constant & $-$0.01 & 0.01 & 0.01$^{***}$ \\ 
+  & (Inf.00) & (Inf.00) & (0.001) \\ 
+  & & & \\ 
+\hline \\[-1.8ex] 
+Observations & 55,453 & 55,453 & 55,453 \\ 
+Log Likelihood & 89,284.21 & 94,474.03 & 94,458.26 \\ 
+$\rho$ & 1.00  (Inf.00) & 1.00  (Inf.00) & 1.00 \\ 
+\hline 
+\hline \\[-1.8ex] 
+\textit{Note:}  & \multicolumn{3}{r}{$^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01} \\ 
+ & \multicolumn{3}{r}{Yearly fixed effects not shown.} \\ 
+\end{tabular} 
+\end{table}
+
+\newpage
+
+\begin{landscape}
+
+\begin{table}[!htbp] \centering 
+  \caption{\label{tab:InterTableAllDyads}Civil conflict intervention, all dyads.} 
+  \label{} 
+\begin{tabular}{@{\extracolsep{5pt}}lcccccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & \multicolumn{6}{c}{\textit{Dependent variable:}} \\ 
+\cline{2-7} 
+\\[-1.8ex] & Conflict intervention (+1 = state, -1 = rebels) & 1 & -1 & 1 & -1 & 1 \\ 
+ & 6 & 6 & 7 & 7 & 8 & 8 \\ 
+\hline \\[-1.8ex] 
+ Net cooperation &  &  &  &  & $-$0.85$^{***}$ & $-$0.04 \\ 
+  &  &  &  &  & (0.04) & (0.06) \\ 
+  & & & & & & \\ 
+ Alliance & 1.95$^{***}$ & 1.88$^{***}$ & 0.79$^{***}$ & 1.13$^{***}$ & $-$0.51$^{*}$ & 1.15$^{***}$ \\ 
+  & (0.49) & (0.52) & (0.20) & (0.21) & (0.27) & (0.22) \\ 
+  & & & & & & \\ 
+ Logged trade & $-$0.04 & 0.53$^{***}$ & $-$0.18$^{***}$ & 0.74$^{***}$ & $-$0.24$^{***}$ & 0.73$^{***}$ \\ 
+  & (0.08) & (0.07) & (0.03) & (0.03) & (0.04) & (0.03) \\ 
+  & & & & & & \\ 
+ IGO overlap &  &  & 0.08$^{***}$ & $-$0.004 & 0.04$^{***}$ & $-$0.01 \\ 
+  &  &  & (0.01) & (0.01) & (0.01) & (0.01) \\ 
+  & & & & & & \\ 
+ Religious dist. &  &  & $-$1.91$^{***}$ & $-$3.77$^{***}$ & $-$2.80$^{***}$ & $-$3.64$^{***}$ \\ 
+  &  &  & (0.12) & (0.17) & (0.15) & (0.18) \\ 
+  & & & & & & \\ 
+ Joint democracy &  &  & $-$8.52$^{***}$ & $-$1.01$^{***}$ & $-$13.44$^{***}$ & $-$0.99$^{***}$ \\ 
+  &  &  & (0.0000) & (0.21) & (0.0000) & (0.21) \\ 
+  & & & & & & \\ 
+ Relative capacity & $-$0.62 & 5.29$^{***}$ & 0.39 & 5.78$^{***}$ & 1.20$^{***}$ & 5.75$^{***}$ \\ 
+  & (1.10) & (1.83) & (0.31) & (0.47) & (0.37) & (0.47) \\ 
+  & & & & & & \\ 
+ Previous MIDs & 2.95$^{***}$ & $-$35.56$^{***}$ & 3.71$^{***}$ & $-$9.53$^{***}$ & 2.98$^{***}$ & $-$16.64$^{***}$ \\ 
+  & (0.32) & (0.00) & (0.18) & (0.0000) & (0.18) & (0.0000) \\ 
+  & & & & & & \\ 
+ Constant & $-$4.66$^{***}$ & $-$10.98$^{***}$ & $-$3.01$^{***}$ & $-$5.77$^{***}$ & $-$2.52$^{***}$ & $-$5.73$^{***}$ \\ 
+  & (0.99) & (1.73) & (0.32) & (0.46) & (0.37) & (0.46) \\ 
+  & & & & & & \\ 
+\hline \\[-1.8ex] 
+Akaike Inf. Crit. & 717.85 & 717.85 & 6,266.80 & 6,266.80 & 5,539.39 & 5,539.39 \\ 
+\hline 
+\hline \\[-1.8ex] 
+\textit{Note:}  & \multicolumn{6}{r}{$^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01} \\ 
+ & \multicolumn{6}{r}{Yearly fixed effects not shown.} \\ 
+\end{tabular} 
+\end{table} 
+\end{landscape}
+
+\newpage
+
+\subsection{Robustness check: MID onset, Cox proportional hazard
+models}\label{robustness-check-mid-onset-cox-proportional-hazard-models}
+
+Per Footnote 5, I also employ Cox proportional hazard regression to
+identify whether a technically more appropriate model changes the
+findings, presented in Table \ref{tab:MidCoxPH}. Again, I find identical
+results in terms of sign and statistical significance. I find no
+evidence to reject the null hypothesis of invariant proportional hazards
+for the net-cooperation variable, although I do interact the measure of
+previous dyadic MIDs with time.
+
+\begin{table}[!htbp] \centering 
+  \caption{\label{tab:MidCoxPH}Results: dyadic MID onset, Cox proportional hazards model.} 
+  \label{} 
+\begin{tabular}{@{\extracolsep{5pt}}lccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & \multicolumn{3}{c}{\textit{Dependent variable:}} \\ 
+\cline{2-4} 
+\\[-1.8ex] & \multicolumn{3}{c}{Dyadic MID onset} \\ 
+ & 1 & 2 & 3 \\ 
+\hline \\[-1.8ex] 
+ Net cooperation &  &  & $-$0.21$^{***}$ \\ 
+  &  &  & (0.02) \\ 
+  & & & \\ 
+ Alliance & 0.44$^{**}$ & 0.54$^{***}$ & 0.45$^{**}$ \\ 
+  & (0.18) & (0.20) & (0.20) \\ 
+  & & & \\ 
+ Logged trade & $-$0.08$^{**}$ & 0.01 & 0.01 \\ 
+  & (0.03) & (0.04) & (0.04) \\ 
+  & & & \\ 
+ IGO overlap &  & $-$0.02$^{**}$ & $-$0.02$^{*}$ \\ 
+  &  & (0.01) & (0.01) \\ 
+  & & & \\ 
+ Religious dist. &  & $-$0.48$^{*}$ & $-$0.51$^{**}$ \\ 
+  &  & (0.26) & (0.26) \\ 
+  & & & \\ 
+ Joint democracy &  & $-$1.56$^{***}$ & $-$1.54$^{***}$ \\ 
+  &  & (0.53) & (0.53) \\ 
+  & & & \\ 
+ Relative capacity & $-$2.38$^{***}$ & $-$2.73$^{***}$ & $-$2.72$^{***}$ \\ 
+  & (0.54) & (0.57) & (0.57) \\ 
+  & & & \\ 
+ Previous MIDs & 390.90$^{***}$ & 382.83$^{***}$ & 259.07$^{*}$ \\ 
+  & (144.98) & (146.59) & (146.69) \\ 
+  & & & \\ 
+ Year & $-$7.18$^{**}$ & $-$7.17$^{**}$ & $-$7.22$^{**}$ \\ 
+  & (2.94) & (2.94) & (2.92) \\ 
+  & & & \\ 
+ Previous MIDs * Year & $-$0.20$^{***}$ & $-$0.19$^{***}$ & $-$0.13$^{*}$ \\ 
+  & (0.07) & (0.07) & (0.07) \\ 
+  & & & \\ 
+\hline \\[-1.8ex] 
+Observations & 4,351 & 4,351 & 4,351 \\ 
+R$^{2}$ & 0.27 & 0.28 & 0.31 \\ 
+$\chi^{2}$ & 520.85$^{***}$ (df = 6) & 544.44$^{***}$ (df = 9) & 596.59$^{***}$ (df = 10) \\ 
+\hline 
+\hline \\[-1.8ex] 
+\textit{Note:}  & \multicolumn{3}{r}{$^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01} \\ 
+\end{tabular} 
+\end{table}\newpage
+
+\subsection{Full list of CAMEO codes}\label{full-list-of-cameo-codes}
+
+Table \ref{tab:CameoCodes} presents a full list of all CAMEO event
+codes.
+
+\begin{longtable}[t]{rrrl}
+\caption{\label{tab:CameoCodes}\label{tab:CAMEOcodes}CAMEO Root codes and Goldstein scores.}\\
+\toprule
+Root Code & Mean Score & Type & Action\\
+\midrule
+1 & 10 & 0.0 & Make statement, not specified below\\
+1 & 11 & -0.1 & Decline comment\\
+1 & 12 & -0.4 & Make pessimistic comment\\
+1 & 13 & 0.4 & Make optimistic comment\\
+1 & 14 & 0.0 & Consider policy option\\
+\addlinespace
+1 & 15 & 0.0 & Acknowledge or claim responsibility\\
+1 & 16 & 3.4 & Make empathetic comment\\
+1 & 17 & 0.0 & Engage in symbolic act\\
+1 & 18 & 3.4 & Express accord\\
+2 & 20 & 3.0 & Appeal, not specified below\\
+\addlinespace
+2 & 21 & 3.4 & Appeal for cooperation, not specified below\\
+2 & 211 & 3.4 & Appeal for diplomatic cooperation\\
+2 & 212 & 3.4 & Appeal for material cooperation\\
+2 & 22 & 3.4 & Appeal for policy support\\
+2 & 23 & 3.4 & Appeal for aid, not specified below\\
+\addlinespace
+2 & 231 & 3.4 & Appeal for economic aid\\
+2 & 232 & 3.4 & Appeal for military aid\\
+2 & 233 & 3.4 & Appeal for humanitarian aid\\
+2 & 234 & 3.4 & Appeal for military protection or peacekeeping\\
+2 & 24 & -0.3 & Appeal for political reform, not specified below\\
+\addlinespace
+2 & 241 & -0.3 & Appeal for change in leadership\\
+2 & 242 & -0.3 & Appeal for policy change\\
+2 & 243 & -0.3 & Appeal for rights\\
+2 & 244 & -0.3 & Appeal for change in institutions, regime\\
+2 & 25 & -0.3 & Appeal to yield\\
+\addlinespace
+2 & 26 & 4.0 & Appeal to others to meet or negotiate\\
+2 & 27 & 4.0 & Appeal to others to settle dispute\\
+2 & 28 & 4.0 & Appeal to others to engage in mediation\\
+3 & 30 & 4.0 & Express intent to cooperate, not specified below\\
+3 & 31 & 5.2 & Express intent to engage in material cooperation,  not specified below\\
+\addlinespace
+3 & 311 & 5.2 & Express intent to cooperate economically\\
+3 & 312 & 5.2 & Express intent to cooperate militarily\\
+3 & 32 & 4.5 & Express intent to provide policy support\\
+3 & 33 & 5.2 & Express intent to provide aid, not specified below\\
+3 & 331 & 5.2 & Express intent to provide economic aid\\
+\addlinespace
+3 & 332 & 5.2 & Express intent to provide military aid\\
+3 & 333 & 5.2 & Express intent to provide humanitarian aid\\
+3 & 334 & 6.0 & Express intent to provide military protection or peacekeeping\\
+3 & 34 & 7.0 & Express intent to bring political reform, not specified below\\
+3 & 341 & 7.0 & Express intent to change leadership\\
+\addlinespace
+3 & 342 & 7.0 & Express intent to change policy\\
+3 & 343 & 7.0 & Express intent to provide rights\\
+3 & 344 & 7.0 & Express intent to change institutions, regime\\
+3 & 35 & 7.0 & Express intent to yield, not specified below\\
+3 & 351 & 7.0 & Express intent to ease administrative sanctions\\
+\addlinespace
+3 & 352 & 7.0 & Express intent to stop protests\\
+3 & 353 & 7.0 & Express intent to accede to political demands\\
+3 & 354 & 7.0 & Express intent to release persons or property\\
+3 & 355 & 7.0 & Express intent to ease economic sanctions, boycott, or embargo\\
+3 & 356 & 7.0 & Express intent allow international involvement (not mediation)\\
+\addlinespace
+3 & 357 & 7.0 & Express intent to de-escalate military engagement\\
+3 & 36 & 4.0 & Express intent to meet or negotiate\\
+3 & 37 & 5.0 & Express intent to settle dispute\\
+3 & 38 & 7.0 & Express intent to accept mediation\\
+3 & 39 & 5.0 & Express intent to mediate\\
+\addlinespace
+4 & 40 & 1.0 & Consult, not specified below\\
+4 & 41 & 1.0 & Discuss by telephone\\
+4 & 42 & 1.9 & Make a visit\\
+4 & 43 & 2.8 & Host a visit\\
+4 & 44 & 2.5 & Meet at a third location\\
+\addlinespace
+4 & 45 & 5.0 & Mediate\\
+4 & 46 & 7.0 & Engage in negotiation\\
+5 & 50 & 3.5 & Engage in diplomatic cooperation, not specified below\\
+5 & 51 & 3.4 & Praise or endorse\\
+5 & 52 & 3.5 & Defend verbally\\
+\addlinespace
+5 & 53 & 3.8 & Rally support on behalf of\\
+5 & 54 & 6.0 & Grant diplomatic recognition\\
+5 & 55 & 7.0 & Apologize\\
+5 & 56 & 7.0 & Forgive\\
+5 & 57 & 8.0 & Sign formal agreement\\
+\addlinespace
+6 & 60 & 6.0 & Engage in material cooperation, not spec below\\
+6 & 61 & 6.4 & Cooperate economically\\
+6 & 62 & 7.4 & Cooperate militarily\\
+6 & 63 & 7.4 & Engage in judicial cooperation\\
+6 & 64 & 7.0 & Share intelligence or information\\
+\addlinespace
+7 & 70 & 7.0 & Provide aid, not specified below\\
+7 & 71 & 7.4 & Provide economic aid\\
+7 & 72 & 8.3 & Provide military aid\\
+7 & 73 & 7.4 & Provide humanitarian aid\\
+7 & 74 & 8.5 & Provide military protection or peacekeeping\\
+\addlinespace
+7 & 75 & 7.0 & Grant asylum\\
+8 & 80 & 5.0 & Yield, not specified below\\
+8 & 81 & 5.0 & Ease administrative sanctions, not specified below\\
+8 & 811 & 5.0 & Ease restrictions on freedoms of speech and expression\\
+8 & 812 & 5.0 & Ease ban on political parties or politicians\\
+\addlinespace
+8 & 813 & 5.0 & Ease curfew\\
+8 & 814 & 5.0 & Ease state of emergency or martial law\\
+8 & 82 & 5.0 & Ease popular protest\\
+8 & 83 & 5.0 & Accede to demands for political reform\\
+8 & 831 & 5.0 & Accede to demands for change in leadership\\
+\addlinespace
+8 & 832 & 5.0 & Accede to demands for change in policy\\
+8 & 833 & 5.0 & Accede to demands for rights\\
+8 & 834 & 5.0 & Accede to demands for change in institutions, regime\\
+8 & 84 & 7.0 & Return, release, not specified below\\
+8 & 841 & 7.0 & Return, release person(s)\\
+\addlinespace
+8 & 842 & 7.0 & Return, release property\\
+8 & 85 & 7.0 & Ease economic sanctions, boycott, embargo\\
+8 & 86 & 9.0 & Allow international involvement\\
+8 & 861 & 9.0 & Receive deployment of peacekeepers\\
+8 & 862 & 9.0 & Receive inspectors\\
+\addlinespace
+8 & 863 & 9.0 & Allow delivery of humanitarian aid\\
+8 & 87 & 9.0 & De-escalate military engagement\\
+8 & 871 & 9.0 & Declare truce, ceasefire\\
+8 & 872 & 9.0 & Ease military blocka\\
+8 & 873 & 9.0 & Demobilize armed forces\\
+\addlinespace
+8 & 874 & 10.0 & Retreat or surrender militarily\\
+9 & 90 & -2.0 & Investigate, not specified below\\
+9 & 91 & -2.0 & Investigate crime, corruption\\
+9 & 92 & -2.0 & Investigate human rights abuses\\
+9 & 93 & -2.0 & Investigate military action\\
+\addlinespace
+9 & 94 & -2.0 & Investigate war crimes\\
+10 & 100 & -5.0 & Demand, not specified below\\
+10 & 101 & -5.0 & Demand information, investigation\\
+10 & 102 & -5.0 & Demand policy support\\
+10 & 103 & -5.0 & Demand aid, protection, or peacekeeping\\
+\addlinespace
+10 & 104 & -5.0 & Demand political reform, not specified below\\
+10 & 1041 & -5.0 & Demand change in leadership\\
+10 & 1042 & -5.0 & Demand policy change\\
+10 & 1043 & -5.0 & Demand rights\\
+10 & 1044 & -5.0 & Demand change in institutions, regime\\
+\addlinespace
+10 & 105 & -5.0 & Demand mediation\\
+10 & 106 & -5.0 & Demand withdrawal\\
+10 & 107 & -5.0 & Demand ceasefire\\
+10 & 108 & -5.0 & Demand meeting, negotiation\\
+11 & 110 & -2.0 & Disapprove, not specified below\\
+\addlinespace
+11 & 111 & -2.0 & Criticize or denounce\\
+11 & 112 & -2.0 & Accuse, not specified below\\
+11 & 1121 & -2.0 & Accuse of crime, corruption\\
+11 & 1122 & -2.0 & Accuse of human rights abuses\\
+11 & 1123 & -2.0 & Accuse of aggression\\
+\addlinespace
+11 & 1124 & -2.0 & Accuse of war crimes\\
+11 & 1125 & -2.0 & Accuse of espionage, treason\\
+11 & 113 & -2.0 & Rally opposition against\\
+11 & 114 & -2.0 & Complain officially\\
+11 & 115 & -2.0 & Bring lawsuit against\\
+\addlinespace
+12 & 120 & -4.0 & Reject, not specified below\\
+12 & 121 & -4.0 & Reject proposal, not specified below\\
+12 & 1211 & -4.0 & Reject ceasefire, withdrawal\\
+12 & 1212 & -4.0 & Reject peacekeeping\\
+12 & 1213 & -4.0 & Reject settlement\\
+\addlinespace
+12 & 122 & -4.0 & Reject request for material aid\\
+12 & 123 & -4.0 & Reject demands for political reform\\
+12 & 1231 & -4.0 & Reject demands for change in leadership\\
+12 & 1232 & -4.0 & Reject demands for policy change\\
+12 & 1233 & -4.0 & Reject demand for rights\\
+\addlinespace
+12 & 1234 & -4.0 & Reject demand change in institutions, regime\\
+12 & 124 & -5.0 & Reject proposal to meet, discuss, or negotiate\\
+12 & 125 & -5.0 & Reject mediation\\
+12 & 126 & -5.0 & Defy norms, law\\
+12 & 127 & -5.0 & Reject accusation, deny responsibility\\
+\addlinespace
+12 & 128 & -5.0 & Veto\\
+13 & 130 & -4.4 & Threaten, not specified below\\
+13 & 131 & -5.8 & Threaten non-force, not specified below\\
+13 & 1311 & -5.8 & Threaten to reduce or stop aid\\
+13 & 1312 & -5.8 & Threaten to boycott, embargo, or sanction\\
+\addlinespace
+13 & 1313 & -5.8 & Threaten to reduce or break relations\\
+13 & 132 & -5.8 & Threaten with administrative sanctions, not specified below\\
+13 & 1321 & -5.8 & Threaten to impose restrictions on freedoms of speech and expression\\
+13 & 1322 & -5.8 & Threaten to ban political parties or politicians\\
+13 & 1323 & -5.8 & Threaten to impose curfew\\
+\addlinespace
+13 & 1324 & -5.8 & Threaten to impose state of emergency or martial law\\
+13 & 133 & -5.8 & Threaten collective dissent\\
+13 & 134 & -5.8 & Threaten to halt negotiations\\
+13 & 135 & -5.8 & Threaten to halt mediation\\
+13 & 136 & -7.0 & Threaten to expel or withdraw peacekeepers\\
+\addlinespace
+13 & 137 & -7.0 & Threaten with violent repression\\
+13 & 138 & -7.0 & Threaten to use military force, not specified below\\
+13 & 1381 & -7.0 & Threaten blockade\\
+13 & 1382 & -7.0 & Threaten occupation\\
+13 & 1383 & -7.0 & Threaten unconventional violence\\
+\addlinespace
+13 & 1384 & -7.0 & Threaten conventional attack\\
+13 & 1385 & -7.0 & Threaten attack with WMD\\
+13 & 139 & -7.0 & Give ultimatum\\
+14 & 140 & -6.5 & Engage in popular protest, not specified below\\
+14 & 141 & -6.5 & Demonstrate or rally\\
+\addlinespace
+14 & 1411 & -6.5 & Demonstrate for change in leadership\\
+14 & 1412 & -6.5 & Demonstrate for policy change\\
+14 & 1413 & -6.5 & Demonstrate for rights\\
+14 & 1414 & -6.5 & Demonstrate for change in institutions, regime\\
+14 & 142 & -6.5 & Conduct hunger strike, not specified below\\
+\addlinespace
+14 & 1421 & -6.5 & Conduct hunger strike for change in leadership\\
+14 & 1422 & -6.5 & Conduct hunger strike for policy change\\
+14 & 1423 & -6.5 & Conduct hunger strike for rights\\
+14 & 1424 & -6.5 & Conduct hunger strike for change in institutions, regime\\
+14 & 143 & -6.5 & Conduct strike or boycott, not specified below\\
+\addlinespace
+14 & 1431 & -6.5 & Conduct strike or boycott for change in leadership\\
+14 & 1432 & -6.5 & Conduct strike or boycott for policy change\\
+14 & 1433 & -6.5 & Conduct strike or boycott for rights\\
+14 & 1434 & -6.5 & Conduct strike or boycott for change in institutions, regime\\
+14 & 144 & -7.5 & Obstruct passage, block\\
+\addlinespace
+14 & 1441 & -7.5 & Obstruct passage to demand change in  leadership\\
+14 & 1442 & -7.5 & Obstruct passage to demand policy change\\
+14 & 1443 & -7.5 & Obstruct passage to demand rights\\
+14 & 1444 & -7.5 & Obstruct passage to demand change in institutions, regime\\
+14 & 145 & -7.5 & Protest violently, riot\\
+\addlinespace
+14 & 1451 & -7.5 & Obstruct passage to demand change in  leadership\\
+14 & 1452 & -7.5 & Obstruct passage to demand policy change\\
+14 & 1453 & -7.5 & Obstruct passage to demand rights\\
+14 & 1454 & -7.5 & Obstruct passage to demand change in institutions, regime\\
+15 & 150 & -7.2 & Demonstrate military or police power, not specified below\\
+\addlinespace
+15 & 151 & -7.2 & Increase police alert status\\
+15 & 152 & -7.2 & Increase military alert status\\
+15 & 153 & -7.2 & Mobilize or increase police power\\
+15 & 154 & -7.2 & Mobilize or increase armed forces\\
+16 & 160 & -4.0 & Reduce relations, not specified below\\
+\addlinespace
+16 & 161 & -4.0 & Reduce or break diplomatic relations\\
+16 & 162 & -5.6 & Reduce or stop aid, not specified below\\
+16 & 1621 & -5.6 & Reduce or stop economic assistance\\
+16 & 1622 & -5.6 & Reduce or stop military assistance\\
+16 & 1623 & -5.6 & Reduce or stop humanitarian assistance\\
+\addlinespace
+16 & 163 & -6.5 & Halt negotiations\\
+16 & 164 & -7.0 & Expel or withdraw, not specified below\\
+16 & 1641 & -7.0 & Expel or withdraw peacekeepers\\
+16 & 1642 & -7.0 & Expel or withdraw inspectors, observers\\
+16 & 1643 & -7.0 & Expel or withdraw aid agencies\\
+\addlinespace
+16 & 165 & -7.0 & Halt mediation\\
+16 & 166 & -8.0 & Impose embargo, boycott, or sanctions\\
+17 & 170 & -7.0 & Coerce, not specified below\\
+17 & 171 & -9.2 & Seize or damage property, not specified below\\
+17 & 1711 & -9.2 & Confiscate property\\
+\addlinespace
+17 & 1712 & -9.2 & Destroy property\\
+17 & 172 & -5.0 & Impose administrative sanctions, not specified below\\
+17 & 1721 & -5.0 & Impose restrictions on freedoms of speech and expression\\
+17 & 1722 & -5.0 & Ban political parties or politicians\\
+17 & 1723 & -5.0 & Impose curfew\\
+\addlinespace
+17 & 1724 & -5.0 & Impose state of emergency or martial law\\
+17 & 173 & -5.0 & Arrest, detain, or charge with legal action\\
+17 & 174 & -5.0 & Expel or deport individuals\\
+17 & 175 & -9.0 & Use violent repression\\
+18 & 180 & -9.0 & Use unconventional violence, not specified below\\
+\addlinespace
+18 & 181 & -9.0 & Abduct, hijack, or take hostage\\
+18 & 182 & -9.5 & Physically assault, not specified below\\
+18 & 1821 & -9.0 & Sexually assault\\
+18 & 1822 & -9.0 & Torture\\
+18 & 1823 & -10.0 & Kill by physical assault\\
+\addlinespace
+18 & 183 & -10.0 & Conduct suicide, car, or other non-military bombing, not spec below\\
+18 & 1831 & -10.0 & Carry out suicide bombing\\
+18 & 1832 & -10.0 & Carry out car bombing\\
+18 & 1833 & -10.0 & Carry out roadside bombing\\
+18 & 184 & -8.0 & Use as human shield\\
+\addlinespace
+18 & 185 & -8.0 & Attempt to assassinate\\
+18 & 186 & -10.0 & Assassinate\\
+19 & 190 & -10.0 & Use conventional military force, not specified below\\
+19 & 191 & -9.5 & Impose blockade, restrict movement\\
+19 & 192 & -9.5 & Occupy territory\\
+\addlinespace
+19 & 193 & -10.0 & Fight with small arms and light weapons\\
+19 & 194 & -10.0 & Fight with artillery and tanks\\
+19 & 195 & -10.0 & Employ aerial weapons\\
+19 & 196 & -9.5 & Violate ceasefire\\
+20 & 200 & -10.0 & Engage in unconventional mass violence, not specified below\\
+\addlinespace
+20 & 201 & -9.5 & Engage in mass expulsion\\
+20 & 202 & -10.0 & Engage in mass killings\\
+20 & 203 & -10.0 & Engage in ethnic cleansing\\
+20 & 204 & -10.0 & Use weapons of mass destruction, not specified below\\
+20 & 2041 & -10.0 & Use chemical, biological, or radiologicalweapons\\
+20 & 2042 & -10.0 & Detonate nuclear weapons\\
+\bottomrule
+\end{longtable}
+
+\renewcommand\refname{References}
+\bibliography{/Users/localadmin/Dropbox/Research/Bibliography/library.bib}
+
+\end{document}
+
