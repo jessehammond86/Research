@@ -4,6 +4,9 @@ Scripts, replication information, and metadata for some of the research projects
 
 ## List of projects
 
+### Data Science in Digital Business (with Bill Fox)
+We introduce and illustrate use-cases for a range of common linear and non-linear statistical models, and provide example code for implementing these models in the R work environment. Finally, we provide some guidance on robustness checking and model fit assessment through residuals analysis.
+
 ### Assessing Event Data in Conflict (with Nils Weidmann)
 An in-depth comparison of three conflict event data sets - ACLED, GED, and GDELT - over a set of civil conflicts in the past two decades. We find that while micro-level event data is useful in explaining and predicting violence, there is a high level of discrepancy between the three data sets, despite their nominally measuring the same type of underlying 'ground truth'.
 
