@@ -1,0 +1,932 @@
+---
+title: "R analysis"
+author: "Jesse Hammond"
+date: "9/20/2017"
+output: 
+  word_document:
+    fig_width: 6
+    fig_height: 4
+    fig_caption: true
+    df_print: tibble
+    highlight: haddock
+---
+
+```{r setup, include = FALSE, caption = 'test'}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Before we start: setting up the workspace
+
+Before working in `R`, it is necessary to set up the "workspace": the virtual environment in which you can load, manipulate, and analyze data. The code below cleans the workspace, erasing any previous objects or functions; sets the working directory, from which we'll load the data to analyze, and also loads a set of "packages" of useful functions that make data cleaning and analysis easier and faster.
+
+```{r workspace, include = TRUE}
+
+##########################
+##
+## Setting up workspace
+##
+##########################
+
+## Clear previous workspace, if any
+rm(list=ls())
+
+## Set working directory
+os_detect <- Sys.info()['sysname']
+if (os_detect == 'Darwin'){
+  setwd('/Users/localadmin/Box Sync/Projects/StatsChapter')
+} 
+
+## Load packages for analysis
+pacman::p_load(
+  data.table, tidyverse, ggplot2, stargazer, easynls, pscl, pander
+)
+
+##########################
+##
+## Reading in the data sets used in this chapter
+##
+##########################
+
+## Read in spring data
+spring_data <- read_csv('./Data/01_correlation.csv')
+sigacts_data <- read_csv('./Data/06_poisson_sigacts.csv')
+recovery_data <- read_csv('./Data/02_exponential_decay.csv')
+shipping_data <- read_csv('./Data/03_sine_regression_shipping.csv')
+afghan_data <- read_csv('./Data/04_sine_regression_casualties.csv')
+war_data <- read_csv('./Data/05_bin_logit_conflict.csv')
+sigacts_data <- read_csv('./Data/06_poisson_sigacts.csv')
+alliance_data <- read_csv('./Data/07_bin_logit_alliance.csv')
+
+
+## Format and subset casualties data
+afghan_data <- mutate(
+  afghan_data
+  , Date = as.Date(paste0(Year, '-', Month, '-', '01'), format = '%Y-%m-%d')
+  ) %>% filter(
+    Date >= as.Date('2006-01-01')
+    , Date <= as.Date('2008-12-01')
+  ) %>% mutate(
+    DateIndex = 1:36
+  )
+
+
+
+```
+
+## Section 1: Introducing linear regression
+
+### 1.1.1: Correlation of spring data
+
+Calculating correlation between two (or more) variables in `R` is simple. After loading in the spring data set as an object into `R`'s workspace, we can first visualize the data in tabular format. This lets us be sure that the data is in the proper format and that there are no oddities (missing values, characters entered instead of numbers) that would cause problems.
+
+```{r 111_spring_tabular, include = T}
+## Print data as a tibble
+print(spring_data)
+```
+
+The data looks to be in order. To estimate the correlation between the two columns in this data set, we simply use the `cor()` command in `R` on the data table:
+
+```{r 111_spring_correlation, include = T}
+## Calculate and print correlation matrix
+print(cor(spring_data))
+```
+
+The data correlate very closely. Visualizing the data makes this relationship easy to see:
+
+```{r 111_spring_corr_plot, include = T}
+## Generate a plot visualizing the data
+spring_cor_plot <- ggplot(
+  aes(x = x, y = y)
+  , data = spring_data) + 
+  geom_point() + 
+  annotate(
+    'text'
+    , x = 100
+    , y = 0.75
+    , label = 'Correlation coefficient:\n 0.999272'
+    , hjust = 0) + 
+  ggtitle('Spring data scatterplot') + 
+  theme_bw()
+
+## Print the plot to console
+plot(spring_cor_plot)
+
+```
+
+### 1.1.2: Linear regression of spring data
+
+Fitting an ordinary least-squares (OLS) model with form $y ~ x + \epsilon$ to the spring data in R is quite simple. Using the `lm()` command (short for "linear model") fits the linear model and saves the result as another object in `R`'s workspace. 
+
+```{r 112_spring_lm_fit, include = T, echo = T}
+
+## Fit OLS model to the data
+spring_model <- lm(
+  y ~ x
+  , data = spring_data
+  )
+```
+
+We can then operate on this object to produce tables presenting coefficient estimates and a range of diagnostic statistics to evaluate how well the model fits the data provided.
+
+
+```{r 112_spring_lm_diag, include = T, echo = F}
+## Summarize model results
+pander(summary(spring_model))
+pander(anova(spring_model))
+
+```
+
+We can visualize this estimated relationship by overlaying the fitted line to the spring data plot. This plot shows that the trend line estimated by the linear model fits the data quite well.
+
+```{r 112_spring_lm_plot, include = T, echo = F}
+## Generate a new plot containing the fitted line
+spring_plot2 <- ggplot(
+  aes(x = x, y = y)
+  , data = spring_data) + 
+  geom_point() + 
+  annotate(
+    'text'
+    , x = 100
+    , y = 0.75
+    , label = 'R^2 == 0.998'
+    , parse = T
+    , hjust = 0) + 
+  ggtitle('Spring data scatterplot with fitted line') + 
+  stat_smooth(method = 'lm', col = 'black', se = F) +
+  theme_bw()
+
+## Print the plot to console
+plot(spring_plot2)
+
+```
+
+
+### 1.1.3: Linear regression of Philippines SIGACTS
+
+```{r sigacts_lm_early, include = T, echo = T}
+
+## Fit OLS model to the data
+sigacts_model_ols <- lm(
+  sigacts_2008 ~ literacy
+  , data = sigacts_data)
+```
+
+```{r sigacts_lm_diag, include = T, echo = F}
+## Summarize model results
+pander(summary(sigacts_model_ols))
+pander(anova(sigacts_model_ols))
+
+```
+
+
+```{r_sigacts_lm_plot, include = T, echo = F}
+## Generate a new plot containing the fitted line
+sigacts_plot <- ggplot(
+  aes(x = literacy, y = sigacts_2008)
+  , data = sigacts_data) + 
+  geom_point() + 
+  annotate(
+    'text'
+    , x = 75
+    , y = 55
+    , label = 'R^2 == 0.077'
+    , parse = T
+    , hjust = 0) + 
+  xlab('Literacy %') + 
+  ylab('Number of violent events') + 
+  ggtitle('Literacy and violent events in the Philippines') + 
+  stat_smooth(method = 'lm', col = 'black', se = F) +
+  theme_bw()
+
+## Print the plot to console
+print(sigacts_plot)
+```
+
+## Section 2: Exponential decay modeling
+
+### 1.2.1: Introducing hospital recovery data
+
+```{r recovery_table, include = T, echo = F}
+## Print data as a tibble
+print(recovery_data)
+```
+
+Printing the table of recovery data shows that once again, the structure of the data is amenable to statistical analysis. We have two columns, $T$ (number of days in the hospital) and $Y$ (estimated recovery index) and we want to generate a model that predicts how well a patient will recover as a function of the time they spend in the hospital. Using the `cor()` command retrieves an initial correlation coefficient of -0.941: 
+
+```{r recovery_corr, include = T, echo = T}
+## Calculate and print correlation matrix
+print(cor(recovery_data))
+```
+
+Once again, creating a scatter plot of the data helps us visualize how closely the estimated correlation value matches the overall trend in the data.
+
+```{r recovery_corr_plot, include = T, echo = F}
+## Generate a new plot containing the fitted line
+recovery_plot <- ggplot(
+  aes(x = T, y = Y)
+  , data = recovery_data) + 
+  geom_point() + 
+  annotate(
+    'text'
+    , x = 30
+    , y = 30
+    , label = 'Correlation coefficient:\n -0.941'
+    , parse = F
+    , hjust = 0) + 
+  xlab('Days in the hospital') + 
+  ylab('Recovery index') + 
+  ggtitle('Recovery index scatterplot') + 
+  theme_bw()
+
+## Print the plot to console
+print(recovery_plot)
+```
+
+### 1.2.2: Linear regression of hospital recovery data
+
+It definitely appears that there is a strong negative relationship: the longer a patient spends in the hospital, the lower their recovery index tends to be. Next, we fit an OLS model to the data to estimate the magnitude of the linear relationship.
+
+```{r recovery_lm, include = T, echo = T}
+
+## Fit OLS model to the data
+recovery_model <- lm(
+  Y ~ T
+  , data = recovery_data
+  )
+```
+
+```{r recovery_lm_diag, include = T, echo = F}
+## Summarize model results
+pander(summary(recovery_model))
+pander(anova(recovery_model))
+
+```
+
+OLS modeling shows that there is a negative and statistically significant relationship between time spent in the hospital and patient recovery index. However, ordinary least-squares regression may not be the best choice in this case for two reasons. First, we are dealing with real-world data: a model that can produce (for example) negative estimates of recovery index is not applicable to the underlying concepts our model is dealing with. Second, the assumption of OLS, like all linear models, is that the magnitude of the relationship between input and output variables stays constant over the entire range of values in the data. However, visualizing the data suggests that this assumption may not hold --- in fact, it appears that the magnitude of the relationship is very high for low values of $T$ and decays somewhat for patients who spend more days in the hospital.
+
+To test for this phenomenon (technically referred to as \emph{heteroscedasticity}) we examine the residuals of the linear model. Residuals analysis can provide quick visual feedback about model fit and whether the relationships estimated hold over the full range of the data. We calcuate residuals as the difference between observed values $Y$ and estimated values $\hat{Y}$ $Y&*$, or $Y_i - Y^*_i$. We then normalize residuals as percent relative error between the observed and estimated values, which helps us compare how well the model predicts each individual observation in the data set:
+
+```{r recovery_res_table, include = T, echo = F}
+
+## Get residuals and percent relative error
+recovery_residuals <- mutate(
+  recovery_data
+  , index = 1:nrow(recovery_data)
+  , predicted = predict(recovery_model)
+  , residuals = Y - predicted
+  , pct_relative_error = residuals / Y * 100
+)
+
+## Print table to console
+print(recovery_residuals)
+```
+
+These data can also be plotted to visualize how well the model fits over the range of our input variable.
+
+```{r recovery_res_plot, include = T, echo = F}
+## Generate a new plot showing residuals
+recovery_res_plot <- ggplot(
+  aes(x = T, y = residuals)
+  , data = recovery_residuals) + 
+  geom_point() + 
+  geom_hline(yintercept = 0) + 
+  ylim(-10, 10) + 
+  xlab('Time in hospital') +
+  ylab('Residuals') + 
+  ggtitle('Linear model residuals by time in hospital') + 
+  theme_bw()
+
+## Print the plot to console
+plot(recovery_res_plot)
+```
+
+The residuals plotted here show a curvilinear pattern, decreasing and then increasing in magnitude over the range of the input variable. This means that we can likely improve the fit of the model by allowing for non-linear effects. Furthermore, the current model can make predictions that are substantively nonsensical, even if they were statistically valid. For example, our model predicts that after 100 days in the hospital, a patient's estimated recovery index value would be -29.79. This has no common sense, as the recovery index variable is always positive in the real world. By allowing for non-linear terms, we can also guard against these types of nonsense predictions.
+
+### 1.2.3: Quadratic regression of hospital recovery data
+
+Including a quadratic term modifies the model formula: $Y = \beta_0 + \beta_1 x + \beta_2 x^2$ Fitting this model to the data produces separate estimates of the effect of $T$ itself as well as the effect of $T^2$, the quadratic term.
+
+```{r recovery_quadratic, include = T, echo = T}
+## Generate model
+recovery_model2 <- lm(Y ~ T + I(T^2), data = recovery_data)
+```
+
+```{r recovery_quad_diag, include = T, echo = F}
+## Summarize model results
+pander(summary(recovery_model2))
+pander(anova(recovery_model2))
+
+```
+
+Including the quadratic term improves model fit as measured by $R^2$ from 0.88 to 0.98 --- a sizable increase. To assess whether this new input variable deals with the curvilinear trend we saw in the residuals from the first model, we re-calculate and visualize the residuals from the quadratic model:
+
+```{r recovery_quad_res_plot, include = T, echo = F}
+## Get residuals and percent relative error
+recovery_residuals2 <- mutate(
+  recovery_data
+    , index = 1:nrow(recovery_data)
+    , predicted = predict(recovery_model2)
+    , residuals = Y - predicted
+    , pct_relative_error = residuals / Y * 100
+  )
+
+## Print table to console
+print(recovery_residuals2)
+
+
+## Generate a new plot showing residuals
+recovery_res_plot2 <- ggplot(
+  aes(x = T, y = residuals)
+  , data = recovery_residuals2) + 
+  geom_point() + 
+  geom_hline(yintercept = 0) + 
+  ylim(-10, 10) + 
+  xlab('Days in hospital') +
+  ylab('Residuals') + 
+  ggtitle('Quadratic model residuals by time in hospital') + 
+  theme_bw()
+
+## Print the plot to console
+plot(recovery_res_plot2)
+
+```
+
+Visually evaluating the residuals from the quadratic model shows that the trend has disappeared. This means that we can assume the same relationship holds whether $T = 1$ or $T = 100$. However, we are still not sure if the model produces estimates that pass the common-sense test. The simplest way to assess this is to generate predicted values of the recovery index variable using the quadratic model, and plot them to see if they make sense.
+
+To generate predicted values in R, we can pass the quadratic model object to the `predict()` function along with a set of hypothetical input values. In other words, we can ask the model what the recovery index would look like for a set of hypothetical patients who spend anywhere from zero to 120 days in the hospital. 
+
+```{r recover_quad_pred_data, include = T, echo = T}
+## Create a set of hypothetical patient observations with days in the hospital from 1 to 120
+patient_days = tibble(T = 1:120)
+
+## Feed the new data to the model to generate predicted recovery index values
+predicted_values = predict(
+  recovery_model2
+  , newdata = patient_days
+  )
+
+
+
+```
+
+We can then plot these estimates to quickly gauge whether they pass the common-sense test for real-world predictive value.
+
+```{r recover_quad_pred_plot, include = T, echo = F}
+## Generate tibble with hypothetical inputs and predicted output values
+recovery_pred_data <- tibble(
+  'T' = patient_days$T
+  , predicted = predicted_values
+)
+
+## Print the first ten predicted values
+print(recovery_pred_data[1:5, ])
+
+## Generate a new plot containing the fitted line
+recovery_pred_plot <- ggplot(
+  aes(x = T, y = predicted)
+  , data = recovery_pred_data) + 
+  geom_point() + 
+  xlab('Days in hospital') +
+  ylab('Predicted recovery index') + 
+  ggtitle('Quadratic model: predicted recovery index') + 
+  theme_bw()
+
+## Print the plot to console
+plot(recovery_pred_plot)
+```
+
+The predicted values curve up toward infinity; clearly this is a problem. The quadratic term we included in the model leads to unrealistic estimates of recovery index at larger values of $T$. Not only is this unacceptable for the context of our model, but it is unrealistic on its face. After all, we understand that people generally spend long periods in the hospital for serious or life-threatening conditions such as severe disease or major bodily injury. As such, we can assess that someone who spends six months in the hospital probably should not have a higher recovery index than someone who was only hospitalized for a day or two.
+
+### 1.2.4: Exponential decay modeling of hospital recovery data
+
+We may be able to build a model that both accurately fits the data and produces estimates that pass the common-sense test by using an exponential decay model. This modeling appraoch lets us model relationships that vary over time in a non-linear fashion --- in this case, we want to accurately capture the strong correlation for lower ranges of $T$, but allow the magnitude of this relationship to decay as $T$ increases, as the data seems to indicate.
+
+Generating non-linear models in `R` is done using the non-linear least squares or NLS function, appropriately labeled `nls()`. This function automatically fits a wide range of non-linear models based on a functional form designated by the user. It is important to note that when fitting an NLS model in `R`, minimizing the sum of squares $\sum_{i = 1}^n (y_i - a(exp(bx_i)))^2$ is done computationally rather than mathematicaly. That means that the choice of starting values for the optimization function is important --- the estimates produced by the model may vary considerably based on the chosen starting values! As such, it is wise to experiment when fitting these non-linear values to test how robust the resulting estimates are to the choice of starting values.
+
+
+```{r recover_expdecay, include = T, echo = T}
+## Fit NLS model to the data
+## Generate model
+recovery_model3 <- nls(
+  Y ~ a * (exp(b * T))
+  , data = recovery_data
+  , start = c(
+    a=1
+    , b=0.05
+  )
+  , trace = T
+)
+
+```
+
+```{r recover_expdecay_diag, include = T, echo = F}
+## Summarize model results
+pander(recovery_model3)
+```
+
+Overlaying the trend produced by the model on the plot of observed values, we see that the NLS modeling approach fits the data very well
+
+```{r recover_expdecay_plot, include = T, echo = F}
+## Generate prediction points to visualize fitted line
+exponential_predline <- tibble(
+  line_x = seq(1, 75, by = 0.1)
+  , line_y = predict(recovery_model3, newdata = tibble(T = seq(1, 75, by = 0.1)))
+)
+
+## Generate a new plot containing the fitted line
+recovery_plot3 <- ggplot(
+  aes(x = T, y = Y)
+  , data = recovery_data) + 
+  geom_point() + 
+  geom_point(aes(x = line_x, y = line_y), data = exponential_predline, size = 0.5) + 
+  # geom_smooth(method = 'lm', formula = (Y ~ exp(T))) +
+  xlab('Days in hospital') + 
+  ylab('Recovery index') + 
+  ggtitle('Exponential decay model: predicted recovery index') + 
+  theme_bw()
+
+## Print the plot to console
+print(recovery_plot3)
+```
+
+Once again, we can visually assess model fit by calculating and plotting the residuals. The figures below show the same residuals plotted along both days in the hospital $T$ and recovery index $Y$.
+
+````{r recover_expdecay_res_plot, include = T, echo = F}
+
+## Get residuals and percent relative error
+recovery_residuals3 <- mutate(
+  recovery_data
+  , predicted = 58.6065*exp(-0.0396*T)
+  , residuals = Y - predicted
+  , pct_relative_error = residuals / Y * 100
+)
+
+## Print table to console
+print(recovery_residuals3[])
+
+
+## Generate a new plot showing residuals by time in hospital
+recovery_res_plot3 <- ggplot(
+  aes(x = T, y = residuals)
+  , data = recovery_residuals3) + 
+  geom_point() + 
+  geom_hline(yintercept = 0) + 
+  ylim(-5, 5) + 
+  xlab('Time in hospital') +
+  ylab('Residuals') + 
+  ggtitle('Exponential decay model residuals by days in hospital') + 
+  theme_bw()
+
+## Print the plot to console
+plot(recovery_res_plot3)
+
+
+## Generate a new plot showing residuals by recovery index
+recovery_res_plot4 <- ggplot(
+  aes(x = Y, y = residuals)
+  , data = recovery_residuals3) + 
+  geom_point() + 
+  geom_hline(yintercept = 0) + 
+  ylim(-5, 5) + 
+  xlab('Recovery index') +
+  ylab('Residuals') + 
+  ggtitle('Exponential decay model residuals by recovery index') + 
+  theme_bw()
+
+## Print the plot to console
+plot(recovery_res_plot4)
+
+
+```
+
+In both cases, we see that there is no easily distinguishable pattern in residuals. Finally, we apply the common-sense check by generating and plotting estimated recovery index values for a set of values of $T$ from 1 to 120.
+
+```{r recover_expdecay_pred_plot, include = T, echo = F}
+
+## Generate predicted recovery index for T = 1:120
+recovery_pred_data2 <- tibble(
+  T = 1:120
+  , predicted = 58.6065*exp(-0.0396*1:120)
+)
+
+## Generate a new plot containing the fitted line
+recovery_pred_plot2 <- ggplot(
+  aes(x = T, y = predicted)
+  , data = recovery_pred_data2) + 
+  geom_point() + 
+  xlab('Days in hospital') +
+  ylab('Predicted recovery index') + 
+  ggtitle('Exponential decay model: predicted recovery index') + 
+  theme_bw()
+
+## Print the plot to console
+plot(recovery_pred_plot2)
+```
+
+The predicted values generated by the exponential decay model make intuitive sense. As the number of days a patient spends in the hospital increases, the model predicts that their recovery index will decrease at a decreasing rate. This means that while the recovery index variable will continuously decrease, it will not take on negative values (as predicted by the linear model) or explosively large values (as predicted by the quadratic model). It appears that the exponential decay model not only fit the data best from a purely statistical point of view, but also generates values that pass the common-sense test to an observer.
+
+## Section 3: Sinusoidal regression
+
+### 1.3.1: Introducing shipping data
+
+```{r shipping_corr, include = T, echo = T}
+
+## Print data as a tibble
+print(shipping_data)
+
+## Calculate and print correlation matrix
+print(cor(shipping_data))
+```
+
+Once again, we can visualize the data in a scatter plot to assess whether this positive correlation is borne out by the overall trend.
+
+```{r shipping_corr_plot, include = T, echo = F}
+## Generate a data scatterplot
+shipping_cor_plot <- ggplot(
+  aes(x = Month, y = UsageTons)
+  , data = shipping_data) + 
+  geom_point() + 
+  annotate(
+    'text'
+    , x = 2
+    , y = 35
+    , label = 'Correlation coefficient:\n 0.673'
+    , parse = F
+    , hjust = 0) + 
+  ylim(0,40) + 
+  xlab('Month') + 
+  ylab('Usage (tons)') + 
+  ggtitle('Shipping data scatterplot') + 
+  theme_bw()
+
+## Print the plot to console
+print(shipping_cor_plot)
+
+```
+
+Visualizing the data, we see that there is a clear positive trend over time in shipping usage. However, examining the data in more detail suggests that a simple linear model may not be best-suited to capturing the variation in these data. One way to plot more complex patterns in data is through the use of a trend line using polynomial or non-parametric smoothing functions.
+
+```{r shipping_spline_plot, include = T, echo = F}
+
+## Generate data for a line based on spline fitting
+shipping_splines <- as.data.frame(
+  do.call(
+    'cbind'
+    , spline(shipping_data$Month, shipping_data$UsageTons)
+    )
+  )
+
+## Generate a new plot containing a fitted line
+shipping_spline_plot <- ggplot(
+  aes(x = Month, y = UsageTons)
+  , data = shipping_data) + 
+  geom_point() + 
+  annotate(
+    'text'
+    , x = 2
+    , y = 35
+    , label = 'Correlation coefficient:\n 0.673'
+    , parse = F
+    , hjust = 0) +
+  geom_line(data = shipping_splines, aes(x = x, y = y)) + 
+  ylim(0,40) + 
+  xlab('Month') + 
+  ylab('Usage (tons)') + 
+  ggtitle('Shipping data spline plot') + 
+  theme_bw()
+
+## Print the plot to console
+print(shipping_spline_plot)
+```
+
+Plotting a trend line generated via a spline function shows that there seems to be an oscillating pattern with a steady increase over time in the shipping data. 
+
+### 1.3.2: Linear regression of shipping data
+
+As a baseline for comparison, we begin by fitting a standard OLS regression model using the `lm()` function in `R`.
+
+```{r shipping_lm, include = T, echo = T}
+
+## Generate model
+shipping_model1 <- lm(UsageTons ~ Month, data = shipping_data)
+
+```
+
+```{r shipping_lm_diag, include = T, echo = F}
+## Summarize model results
+pander(summary(shipping_model1))
+pander(anova(shipping_model1))
+
+```
+
+While the linear model fits the data fairly well, the oscillation identified by the spline visualization suggests that we should apply a model that better fits the seasonal variation in the data.
+
+### 1.3.3: Sinusoidal regression of shipping data
+
+R treats sinusoidal regression models as part of the larger family of nonlinear least-squares (NLS) regression models. This means that we can fit a sinusoidal model using the same `nls()` function and syntax as we applied earlier for the exponential decay model. The functional form for the sinusoidal model we use here can be written as: 
+$$Usage = a*sin(b * time + c) + d*time + e$$
+This function can be expanded out trigonometrically as:
+$$ Usage = a * time + b * sin(c*time) + d*cos(c(time)) + e$$
+This equation can be passed to `nls()` and `R` will computationally assess best-fit values for the $a, b, c, d,$ and $e$ terms. It is worth stressing again the importance of selecting good starting values for this process, especially for a model like this one with many parameters to be simultaneously estimated. Here, we set starting values based on pre-analysis of the data. It is also important to note that because the underlying algorithms used to optimize these functions differ between Excel and R, the two methods produce models with different parameters but nearly identical predictive qualities. \footnote{If working in the `R` environment, users might also consider using a 'brute-force' method like parameter grid-search to assess different combinations of starting parameters and pick the set that produces the best-fitting model.} The model can be specified in `R` as follows.
+
+```{r shipping_sine, include = T, echo = T}
+
+## Generate model
+shipping_model2 <- nls(
+  UsageTons ~ a * Month + b*sin(c*Month) + d*cos(c*Month) + e
+  , data = shipping_data
+  , start = c(
+    a=5
+    , b=10
+    , c=1
+    , d=1
+    , e=10
+    )
+  , trace = T
+)
+
+```
+
+```{r shipping_sine_diag, include = T, echo = F}
+## Summarize model results
+pander(shipping_model2)
+```
+
+```{r shipping_sine_plot, include = T, echo = F}
+## Generate data for a line based on sinusoidal regression
+shipping_predict <- tibble(
+  y = predict(shipping_model2, newdata = tibble(Month = seq(1, 20, by = 0.01)))
+  , x = seq(1, 20, by = 0.01)
+)
+  
+
+## Generate a new plot containing a fitted line
+shipping_sine_plot <- ggplot(
+  aes(x = Month, y = UsageTons)
+  , data = shipping_data) + 
+  geom_point() + 
+  geom_line(data = shipping_predict, aes(x = x, y = y)) + 
+  ylim(0,40) + 
+  xlab('Month') + 
+  ylab('Usage (tons)') + 
+  ggtitle('Sinusoidal model: predicting usage in metric tons') + 
+  theme_bw()
+
+## Print the plot to console
+print(shipping_sine_plot)
+
+```
+
+Plotting the trend line produced by the sinusoidal model shows that this modeling approach fits the data much better, accounting for both the short-term seasonal variation and the long-term increase in shipping usage. 
+
+```{r shipping_sine_res, include = T, echo = F}
+## Get residuals and percent relative error
+shipping_residuals <- mutate(
+  shipping_data
+  , predicted = predict(shipping_model2)
+  , residuals = UsageTons - predicted
+  , pct_relative_error = residuals / UsageTons * 100
+)
+print(shipping_residuals)
+```
+
+Analysis of model residuals bears this out, and also highlights the difference in solving method between Excel and `R`. The model fitted in `R` has different parameter estimates and slightly worse model fit (average percent relative error of 3.26% as opposed to the 3.03% from the Excel-fitted model) but the overall trend identified in the data is virtually identical.
+
+### 1.3.4: Introducing Afghanistan casualty data
+
+```{r afghan_corr, include = T, echo = F}
+
+## Generate a data scatterplot
+afghan_plot <- ggplot(
+  aes(x = Date, y = Casualties)
+  , data = afghan_data) + 
+  geom_point() + 
+  xlab('Date') + 
+  ylab('US casualties') + 
+  ggtitle('US casualties in Afghanistan, 2006-2009') + 
+  theme_bw()
+
+## Print the plot to console
+print(afghan_plot)
+
+```
+
+### 1.3.5: Sinusoidal regression of Afghanistan casualties
+
+Visualizing data on casualties in Afghanistan between 2006 and 2008 shows an increasing trend overall, and significant seasonal oscillation. Once again, we want to fit a non-linear model that accounts for the oscillation present in the data. We use the same sinusoidal functional form 
+$$Casualties = a * sin(b * time + c) + d * time + e$$
+
+which as before can be expressed as
+$$Casualties = a * time + b * sin(c * time) + d*cos(c*time) + e$$
+We fit the model using the `nls()` function once again:
+
+```{r afghan_sine, include = T, echo = F}
+
+## Generate model
+afghan_model <- nls(
+  Casualties ~ a * DateIndex + b*sin(c*DateIndex) + d*cos(c*DateIndex) + e
+  , data = afghan_data
+  , start = c(
+    a=1
+    , b=10
+    , c=1
+    , d=10
+    , e=1
+  )
+  , trace = T
+)
+```
+
+```{r afghan_diag, include = T, echo = F}
+pander(afghan_model)
+```
+
+
+
+```{r afghan_sine_plot, include = T, echo = F}
+## Generate data for a line based on sinusoidal regression
+afghan_predict <- tibble(
+  y = predict(afghan_model, newdata = tibble(DateIndex = seq(1, 36, by = 0.01)))
+  , x = seq(1, 36, by = 0.01)
+)
+
+
+## Generate a new plot containing a fitted line
+afghan_sine_plot <- ggplot(
+  aes(x = DateIndex, y = Casualties)
+  , data = afghan_data) + 
+  geom_point() + 
+  geom_line(data = afghan_predict, aes(x = x, y = y)) + 
+  xlab('Month') + 
+  ylab('US Casualties') + 
+  ggtitle('Sinusoidal model: US casualties in Afghanistan, 2006-2009') + 
+  theme_bw() + 
+  theme(plot.title = element_text(size = 15)) #+ 
+  #theme_bw()
+
+## Print the plot to console
+print(afghan_sine_plot)
+```
+
+Plotting the trend line identified by the sinusoidal model shows again that the sinusoidal modeling approach can account for both short-term osscilation and long-term increase. We can now estimate residuals and error metrics, and assess how well the model fits over the full range of the data. 
+
+```{r afghan_sine_res, include = T, echo = F}
+
+## Get residuals and percent relative error
+afghan_residuals <- mutate(
+  afghan_data
+  , predicted = predict(afghan_model)
+  , residuals = Casualties - predicted
+  , pct_relative_error = residuals / Casualties * 100
+)
+
+## Print table to console
+print(afghan_residuals)
+
+
+## Generate a new plot showing residuals by casualty count
+afghan_res_plot <- ggplot(
+  aes(x = Casualties, y = residuals)
+  , data = afghan_residuals) + 
+  geom_point() + 
+  geom_hline(yintercept = 0) + 
+  xlab('US Casualties') +
+  ylab('Residuals') +
+  ggtitle('Sinusoidal model residuals by casualty count') +
+  theme_bw()
+
+## Print the plot to console
+plot(afghan_res_plot)
+
+```
+Again, this highlights both the importance of starting values and the difference in estimation method between `R` and Excel. Despite using different starting values and estimating very different parameters, each model produces very similar estimates of casualties over time: $SSE$ for the Excel model is 14415.2125, almost identical to the `R` model $SS$ of 14408.35.
+
+## Section 1.4: Logistic regression
+
+### 1.4.1: Introducing conflict outcome data
+
+
+### 1.4.2: Logistic regression of conflict outcome data
+
+Conflict outcomes differ from the data we've examined so far in that the measure of state victory only has two values, 1 and 0. This type of data be modeled using a binomial logistic (or sometimes "logit") regression. Logistic regression estimates an underlying continuous variable usually referred to as $Y^*$ that is then transformed into an estimate bounded below by 0 and above by 1. This means the logistic modeling approach is extremely useful for estimating binary (1/0) outcomes, as the estimated values can be easily translated into either point estimates or log-probabilities of observing a 1 versus a 0:
+
+$$Ln(\frac{P}{1-P}) = \beta_0 + beta_1X_1$$
+
+The logistic model in `R` is treated as one case of a broader range of generalized linear models (GLM), and can be accessed via the conveniently named `glm()` function. Note that because `glm()` implements a wide range of generalized linear models based on the inputs provided, it is necessary for the user to specify both the family of model (binomial) and the link function (logit). 
+
+```{r conflict_logit, include = T, echo = T}
+
+## Generate model
+war_model <- glm(
+  side_a ~ cd_pct
+  , data = war_data
+  , family = binomial(link = 'logit')
+  )
+
+```
+
+```{r conflict_logit_diag, include = T, echo = F}
+pander(war_model)
+```
+
+Logistic regression shows that there is a positive correlation between civilian casualties and state victory, but that this relationship is not statistically significant at the $p < 0.05$ level. This means we cannot reject the null hypothesis $H_0$ that no relationship exists between the input and output variables.
+
+### 1.4.3: Introducing international alliance data
+
+We now turn to a larger data set, measuring alliance connections between politically relevant states (powerful states and those that share a border with one another) in the international system in the year 2000. Scholars are often interested in assessing the factors that predict whether two states will form a military alliance, as these are salient and lasting forms of cooperation that signal trust (or at least, a lack of overt enmity) between governments. 
+
+Coupled with data on whether or not an alliance exists, we also have data on the level of membership overlap each pair of states shares in major intergovernmental organizations (IGOs). These IGOs include major international entities such as the United Nations, the World Trade Organization, and the International Atomic Energy Agency, as well as regional or policy-based organizations such as the Association of Southeast Asian Nations (ASEAN) or the Organization of Petroleum Exporting Countries (OPEC). 
+
+The data used for this analysis is presented in the table below. The first two columns identify the ISO-3000 code identifying each country. Alliances are recorded as being present (1) or absent (0), and the overlap of IGO membership is recorded as a count value bounded below by zero.
+
+```{r conflict_table, include = T, echo = F}
+print(alliance_data)
+```
+
+### 1.4.4: Logistic regression of alliance data
+
+States which share membership in many of the same IGOs are likely to have similar policy preferences, regional concerns, and economic status that lead to their choosing to join these organizations. If we believe that similarity breeds familiarity and lowers barriers to cooperation (similar to the 'birds of a feather' argument), then we can generate testable expectations about how shared IGO membership relates to the probability of forming an alliance between states. Specifically, we hypothesize that as shared IGO membership between a pair of states increases, the probability that these states also share a military alliance will increase as well.
+
+We can test this hypothesis by fitting another logistic model in `R` using the `glm()` function.
+
+```{r alliance_logit, include = T, echo = T}
+alliance_model <- glm(
+  alliance_present ~ igo_overlap
+  , data = alliance_data
+  , family = binomial(link = 'logit')
+  )
+```
+
+```{r alliance_diag, include = T, echo = F}
+pander(summary(alliance_model))
+```
+
+The results of the logistic regression suggest that there is a positive relationship between the number of IGO memberships a pair of states share and the likelihood that they also share an alliance. This relationship is significant at the $p < 0.01$ level, meaning that we can reject the null hypothesis $H_0$ with a high level of confidence. 
+
+Remember that logistic regression models can produce estimated probabilities of observing a 1 versus a 0 based on a given set of input values. This is a useful way of visualizing how well a model fits the observed data. Here, we produce a set of predicted probabilities (bounded between 0 and 1) that an alliance will be present between each pair of states based on their IGO membership overlap, and overlay this trend line on the scatter plot of 0 and 1 values present in the data.
+
+```{r alliance_pred_plot, include = T, echo = F}
+alliance_data %>%
+  ggplot(aes(igo_overlap, alliance_present)) +
+  geom_point(alpha = .15) +
+  geom_smooth(method = "glm", method.args = list(family = "binomial")) +
+  ggtitle("Logistic regression model fit") +
+  xlab("Number of shared IGO memberships") +
+  ylab("Probability of sharing an alliance tie") + 
+  theme_bw()
+
+```
+
+Visualizing the predicted probability estimates shows that the model does a moderately good job of separating out 0's and 1's based on the inputs used. IGO membership is certainly not the only factor that may explain how states form alliances with one another, but it provides a useful starting point for modeling.
+
+## Section 1.5: Poisson regression
+
+### 1.5.1: Introducing SIGACTS data
+
+As discussed earlier in the chapter, the regional SIGACTS data recorded in the Philippines are count data, meaning they take only integer values and are bounded below by zero. Visualizing count data in a histogram is a useful way of assessing how the data are distributed.
+
+```{r sigacts_hist, include = T, echo = F}
+
+## Generate a histogram plot
+sigacts_hist <- ggplot(
+  aes(x = sigacts_2008)
+  , data = sigacts_data) + 
+  geom_histogram() + 
+  xlab('Count of SIGACTS in 2008') + 
+  ggtitle('Histogram of SIGACTS counts') + 
+  theme_bw()
+
+## Print the plot to console
+print(sigacts_hist)
+```
+
+Visualizing the data in a histogram we observe that they appear be Poisson-distributed, which is common in count data.
+
+### 1.5.2: Poisson regression of SIGACTS data
+
+Poisson regression in `R` is also treated as a special case of GLMs, similar to the logistic regression covered in the previous section. As such, it can be implemented using the same `glm()` function, but now specifying the model family as 'poisson', which tells R to implement a Poisson model. The model we use here can be specified as
+$$Y = e^{\beta_0 + \beta_1 GGI + \beta_2 Literacy + \beta_3 Poverty}$$
+
+```{r sigacts_poisson, include = T, echo = T}
+
+## Generate model
+sigacts_model <- glm(
+  sigacts_2008 ~ ggi_2008 + literacy + poverty
+  , data = sigacts_data
+  , family = poisson
+)
+
+```
+
+```{r sigacts_diag, include = T, echo = F}
+pander(summary(sigacts_model))
+```
+
+
+Note that Poisson models generate log-odds estimates. This means that we can readily convert coefficient estimates to odds ratios, indicating the impact that a one-unit change in a given input variable will have on the estimated number of events. When interpreting odds ratios, remember that an odds ratio above 1.0 indicates that increasing the input variable increase the estimated event count, while odds ratios lower than 1.0 indicate that increasing the input variable will lower the estimated event count.
+
+* exp(-0.0136) = 0.986. This means that increasing the value of government satistfaction by one unit will lower the expected level of violence by about 1.4%.
+* exp(-0.02098) = 0.979. This means that increasing the value of literacy by one unit will lower the expected level of violence by about 2.1%.
+* exp(0.02297) = 1.023. This means that increasing the value of poverty by one unit will increase the expected level of violence by about 1.02%.
+
+
+These relationships are all in the direction we would intuitively expect: higher literacy and greater satisfaction with the government should certainly be associated with lower levels of anti-government violence, while greater poverty may drive discontent and disorder, including violent acts. However, only the estimated coefficients on government satisfaction and literacy are statistically significant; for poverty, we cannot reject the null hypothesis at $p < 0.05$. 
